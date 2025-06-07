@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Organizer",
+  "version": "1.0",
+  "description": "Organize and manage your Chrome tabs efficiently",
+  "permissions": [
+    "tabs"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Tab Organizer AI"
+  }
+}
