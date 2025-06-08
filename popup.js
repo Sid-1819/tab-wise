@@ -1,4 +1,3 @@
-// Fixed popup.js
 console.log("popup.js loaded ✅");
 
 function createSearchBar() {
@@ -27,21 +26,43 @@ function createSearchBar() {
   return searchDiv;
 }
 
+function prettifyDomain(domain) {
+  const knownNames = {
+    'google.com': 'Google',
+    'youtube.com': 'YouTube',
+    'github.com': 'GitHub',
+    'stackoverflow.com': 'Stack Overflow',
+    'facebook.com': 'Facebook',
+    'twitter.com': 'Twitter',
+    'linkedin.com': 'LinkedIn',
+    'reddit.com': 'Reddit',
+    'amazon.com': 'Amazon',
+    'netflix.com': 'Netflix',
+  };
+
+  if (knownNames[domain]) {
+    return knownNames[domain];
+  }
+
+  const parts = domain.split('.');
+  const main = parts.length > 2 ? parts[parts.length - 2] : parts[0];
+  return main.charAt(0).toUpperCase() + main.slice(1);
+}
+
 function groupTabs(tabs) {
   const groups = {};
   tabs.forEach(tab => {
     try {
       const url = new URL(tab.url);
       let groupName;
-      
-      // Handle special cases first
+
       if (url.protocol === 'chrome:' || url.protocol === 'chrome-extension:') {
         groupName = 'Chrome';
       } else if (url.protocol === 'file:') {
         groupName = 'Local Files';
       } else {
-        // Get the domain without www
-        groupName = url.hostname.replace(/^www\./, '');
+        const rawDomain = url.hostname.replace(/^www\./, '');
+        groupName = prettifyDomain(rawDomain);
       }
 
       if (!groups[groupName]) {
@@ -49,7 +70,6 @@ function groupTabs(tabs) {
       }
       groups[groupName].tabs.push(tab);
     } catch (e) {
-      // Handle invalid URLs by putting them in an "Other" group
       const groupName = 'Other';
       if (!groups[groupName]) {
         groups[groupName] = { tabs: [] };
@@ -58,7 +78,6 @@ function groupTabs(tabs) {
     }
   });
 
-  // Sort groups by tab count (descending)
   const sortedGroups = {};
   Object.keys(groups)
     .sort((a, b) => groups[b].tabs.length - groups[a].tabs.length)
@@ -83,7 +102,7 @@ function createGroupElement(domain, groupData) {
   const favicon = document.createElement('img');
   favicon.src = tabs[0].favIconUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
   favicon.className = 'tab-group-favicon';
-  favicon.onerror = function() {
+  favicon.onerror = function () {
     this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
   };
 
@@ -111,7 +130,7 @@ function createGroupElement(domain, groupData) {
 
   const tabsContainer = document.createElement('div');
   tabsContainer.className = 'tabs-container';
-  
+
   tabs.forEach(tab => {
     const tabEl = document.createElement('div');
     tabEl.className = 'tab-item';
@@ -121,16 +140,16 @@ function createGroupElement(domain, groupData) {
     const tabFavicon = document.createElement('img');
     tabFavicon.src = tab.favIconUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
     tabFavicon.className = 'tab-item-favicon';
-    tabFavicon.onerror = function() {
+    tabFavicon.onerror = function () {
       this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
     };
-    
+
     const label = document.createElement('span');
     label.textContent = tab.title.length > 50 ? tab.title.slice(0, 50) + '...' : tab.title;
     label.className = 'tab-item-title';
     label.onclick = () => {
       chrome.tabs.update(tab.id, { active: true });
-      window.close(); // Close the popup after switching tabs
+      window.close();
     };
 
     const closeBtn = document.createElement('button');
@@ -158,7 +177,7 @@ function filterTabs(e) {
   const query = e.target.value.toLowerCase();
   const tabItems = document.querySelectorAll('.tab-item[data-url]');
   let visibleCount = 0;
-  
+
   tabItems.forEach(tabEl => {
     const title = (tabEl.dataset.title || '').toLowerCase();
     const url = (tabEl.dataset.url || '').toLowerCase();
@@ -167,7 +186,6 @@ function filterTabs(e) {
     if (isVisible) visibleCount++;
   });
 
-  // Hide/show groups based on whether they have visible tabs
   document.querySelectorAll('.tab-group').forEach(group => {
     const visibleTabsInGroup = group.querySelectorAll('.tab-item[style*="flex"], .tab-item:not([style])').length;
     group.style.display = visibleTabsInGroup > 0 ? 'block' : 'none';
@@ -177,7 +195,6 @@ function filterTabs(e) {
 function closeTabs(tabs) {
   const tabIds = tabs.map(tab => tab.id);
   chrome.tabs.remove(tabIds, () => {
-    // Refresh the popup after closing tabs
     initializePopup();
   });
 }
@@ -194,23 +211,19 @@ function updateTabCount() {
 function initializePopup() {
   chrome.tabs.query({}, tabs => {
     console.log("Tabs fetched:", tabs.length);
-    
+
     const container = document.getElementById('tabGroups');
     if (!container) {
       console.error("tabGroups container not found!");
       return;
     }
-    
-    // Clear existing content
+
     container.innerHTML = '';
-    
-    // Add search bar
     container.appendChild(createSearchBar());
-    
-    // Group and display tabs
+
     const grouped = groupTabs(tabs);
     console.log("Grouped tabs:", grouped);
-    
+
     Object.keys(grouped).forEach(domain => {
       const groupEl = createGroupElement(domain, grouped[domain]);
       container.appendChild(groupEl);
@@ -220,7 +233,6 @@ function initializePopup() {
   });
 }
 
-// Initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializePopup);
 } else {

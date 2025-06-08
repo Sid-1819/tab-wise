@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Tab Organizer",
+  "name": "Tab Wise",
   "version": "1.0",
   "description": "Organize and manage your Chrome tabs efficiently",
   "permissions": [
@@ -9,5 +9,8 @@
   "action": {
     "default_popup": "popup.html",
     "default_title": "Tab Organizer AI"
+  },
+  "icons": {
+    "16": "icons/icon1.png"
   }
 }
