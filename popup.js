@@ -1,4 +1,18 @@
 console.log("popup.js loaded ✅");
+const toggle = document.getElementById('toggle-theme');
+
+toggle.addEventListener('change', () => {
+  const theme = toggle.checked ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  toggle.checked = savedTheme === 'dark';
+});
+
 
 function createSearchBar() {
   const searchDiv = document.createElement('div');
