@@ -24,7 +24,7 @@ Tabwise is a productivity-focused Chrome extension that helps you manage, search
 ## 📦 Installation
 
 ### From Chrome Web Store  
-> [🚀 Click here to install Tabwise](https://chrome.google.com/webstore) *(Link to be added once published)*
+> [🚀 Click here to install Tabwise](https://chromewebstore.google.com/detail/tab-wise/ohpilcjcbejponkajcccllodpgcnnlpg) 
 
 ### Manual Installation (Development)
 
