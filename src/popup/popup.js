@@ -174,17 +174,20 @@ function createGroupElement(domain, groupData) {
   chrome.tabs.remove(tab.id, () => {
     tabEl.remove();
 
-    const tabsContainer = tabEl.parentElement;
-    const groupDiv = tabsContainer.parentElement;
+    // ⏱ Delay to let Chrome finalize the removal
+    setTimeout(() => {
+      const tabsContainer = tabEl.parentElement;
+      const groupDiv = tabsContainer.parentElement;
 
-    // If no more tab items left in this group, remove the entire group
-    if (tabsContainer.querySelectorAll('.tab-item').length === 0) {
-      groupDiv.remove();
-    }
+      if (tabsContainer.querySelectorAll('.tab-item').length === 0) {
+        groupDiv.remove();
+      }
 
-    updateTabCount();
+      updateTabCount();
+    }, 100); // 100ms is usually enough, tweak if needed
   });
 };
+  
 
 
     tabEl.appendChild(tabFavicon);

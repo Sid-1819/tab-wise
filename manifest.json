@@ -3,15 +3,15 @@
   "name": "Tab Wise",
   "version": "1.0",
   "description": "Organize and manage your Chrome tabs efficiently",
-  "permissions": ["tabs", "notifications"],
+  "permissions": ["tabs", "notifications", "storage"],
   "background": {
-    "service_worker": "service_worker.js",
+    "service_worker": "src/background/service_worker.js",
     "type": "module"
   },
   "host_permissions": ["<all_urls>"],
 
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/popup/popup.html",
     "default_title": "Tab Wise"
   },
   "icons": {

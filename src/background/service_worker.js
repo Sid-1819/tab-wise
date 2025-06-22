@@ -1,4 +1,4 @@
-import { TAB_LIMIT } from './constants.js';
+import { TAB_LIMIT } from '../utils/constants.js';
 
 function checkTabCount() {
   console.log('Checking tab count...');
