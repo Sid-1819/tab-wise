@@ -170,12 +170,22 @@ function createGroupElement(domain, groupData) {
     closeBtn.textContent = '✖';
     closeBtn.className = 'btn-tab-close';
     closeBtn.onclick = (e) => {
-      e.stopPropagation();
-      chrome.tabs.remove(tab.id, () => {
-        tabEl.remove();
-        updateTabCount();
-      });
-    };
+  e.stopPropagation();
+  chrome.tabs.remove(tab.id, () => {
+    tabEl.remove();
+
+    const tabsContainer = tabEl.parentElement;
+    const groupDiv = tabsContainer.parentElement;
+
+    // If no more tab items left in this group, remove the entire group
+    if (tabsContainer.querySelectorAll('.tab-item').length === 0) {
+      groupDiv.remove();
+    }
+
+    updateTabCount();
+  });
+};
+
 
     tabEl.appendChild(tabFavicon);
     tabEl.appendChild(label);
