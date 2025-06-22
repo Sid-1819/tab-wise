@@ -32,8 +32,6 @@ body {
 .popup-container {
     background-color: var(--bg-color);
   width: 480px;
-  max-height: 600px;
-  overflow-y: auto;
   padding: 16px;
 }
 
@@ -45,6 +43,8 @@ body {
   margin-bottom: 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid #e0e0e0;
+  justify-content: space-between;
+
 }
 
 .popup-logo {
@@ -230,34 +230,33 @@ body {
   background: var(--scrollbar-thumb-hover);
 }
 .theme-toggle {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  width: 48px;
+  height: 24px;
+  position: relative;
   display: inline-block;
-  width: 60px;
-  height: 30px;
+  margin-left: auto;
 }
 
 .theme-toggle input {
   opacity: 0;
   width: 0;
   height: 0;
+  position: absolute;
 }
 
 .slider {
   background-color: #ccc;
-  border-radius: 30px;
-  position: relative;
+  border-radius: 9999px;
   cursor: pointer;
-  height: 100%;
   width: 100%;
-  transition: background-color 0.3s;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 6px;
-  font-size: 14px;
+  padding: 4px 6px;
   box-sizing: border-box;
+  font-size: 12px;
+  transition: background-color 0.3s ease;
 }
 
 .slider .icon {
@@ -266,16 +265,8 @@ body {
   transition: opacity 0.3s;
 }
 
-.slider .sun {
-  order: 1;
-}
-
-.slider .moon {
-  order: 2;
-}
-
 input:checked + .slider {
-  background-color: #333;
+  background-color: #4b5563; /* Tailwind gray-700 */
 }
 
 input:checked + .slider .sun {
