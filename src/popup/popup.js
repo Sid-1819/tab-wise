@@ -1,4 +1,18 @@
 console.log("popup.js loaded ✅");
+const toggle = document.getElementById('toggle-theme');
+
+toggle.addEventListener('change', () => {
+  const theme = toggle.checked ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  toggle.checked = savedTheme === 'dark';
+});
+
 
 function createSearchBar() {
   const searchDiv = document.createElement('div');
@@ -156,12 +170,25 @@ function createGroupElement(domain, groupData) {
     closeBtn.textContent = '✖';
     closeBtn.className = 'btn-tab-close';
     closeBtn.onclick = (e) => {
-      e.stopPropagation();
-      chrome.tabs.remove(tab.id, () => {
-        tabEl.remove();
-        updateTabCount();
-      });
-    };
+  e.stopPropagation();
+  chrome.tabs.remove(tab.id, () => {
+    tabEl.remove();
+
+    // ⏱ Delay to let Chrome finalize the removal
+    setTimeout(() => {
+      const tabsContainer = tabEl.parentElement;
+      const groupDiv = tabsContainer.parentElement;
+
+      if (tabsContainer.querySelectorAll('.tab-item').length === 0) {
+        groupDiv.remove();
+      }
+
+      updateTabCount();
+    }, 100); // 100ms is usually enough, tweak if needed
+  });
+};
+  
+
 
     tabEl.appendChild(tabFavicon);
     tabEl.appendChild(label);
