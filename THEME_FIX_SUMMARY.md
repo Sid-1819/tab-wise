@@ -76,7 +76,7 @@ Your theme now uses **OKLCH** (Oklab color space):
 ### UI Elements
 - `border` - Border color
 - `input` - Input borders
-- `ring` - Focus rings
+- `ring-3` - Focus rings
 
 ### Additional
 - `chart-1` to `chart-5` - Chart/graph colors

@@ -269,7 +269,7 @@ Add your own colors in `src/index.css`:
 Then use in Tailwind:
 
 ```tsx
-<div className="bg-[var(--color-success)]">Success!</div>
+<div className="bg-(--color-success)">Success!</div>
 ```
 
 Or extend `tailwind.config.js`:

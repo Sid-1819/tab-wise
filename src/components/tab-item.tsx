@@ -27,7 +27,7 @@ export function TabItem({ tab, onClose, onClick }: TabItemProps) {
       <img
         src={tab.favIconUrl || DEFAULT_FAVICON}
         alt=""
-        className="w-4 h-4 flex-shrink-0"
+        className="w-4 h-4 shrink-0"
         onError={(e) => {
           e.currentTarget.src = DEFAULT_FAVICON;
         }}
