@@ -3,7 +3,7 @@
   "name": "Tab Wise",
   "version": "2.0.0",
   "description": "Organize and manage your Chrome tabs efficiently with a modern React interface",
-  "permissions": ["tabs"],
+  "permissions": ["tabs", "system.memory"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "index.html",

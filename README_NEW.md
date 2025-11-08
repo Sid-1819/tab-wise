@@ -35,6 +35,7 @@ Tabwise is a modern, productivity-focused Chrome extension built with React, Typ
 - 🔒 **Type-Safe** – Full TypeScript coverage
 - ♿ **Accessible** – Built with Radix UI primitives
 - 📊 **Tab Statistics** – See total tabs and groups at a glance
+- 💾 **Memory Optimization** *(Chrome Dev/Canary only)* – Track memory usage and optimize high-memory tabs
 
 ---
 
