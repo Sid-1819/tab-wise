@@ -1,22 +1,17 @@
 {
   "manifest_version": 3,
   "name": "Tab Wise",
-  "version": "1.0",
-  "description": "Organize and manage your Chrome tabs efficiently",
+  "version": "2.0.0",
+  "description": "Organize and manage your Chrome tabs efficiently with a modern React interface",
   "permissions": ["tabs"],
   "host_permissions": ["<all_urls>"],
-
   "action": {
-    "default_popup": "src/popup/popup.html",
+    "default_popup": "index.html",
     "default_title": "Tab Wise"
   },
   "icons": {
-    "16": "icons/icon2.png"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": ["icons/*"],
-      "matches": ["<all_urls>"]
-    }
-  ]
+    "16": "icons/icon2.png",
+    "48": "icons/icon2.png",
+    "128": "icons/icon2.png"
+  }
 }
