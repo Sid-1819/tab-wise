@@ -57,11 +57,9 @@ export function Popup() {
   const totalGroups = Object.keys(groupedTabs).length;
 
   return (
-    <div className="w-[600px] p-4">
+    <div className="w-[600px] overflow-hidden p-4">
       <header className="flex items-center justify-between mb-5 pb-3 border-b">
-        <h1 className="text-2xl font-bold bg-background bg-clip-text text-primary">
-          Tab Wise
-        </h1>
+       <img src="/icons/tw_new.png" alt="Tab Wise" className="h-8" />
         <ThemeToggle />
       </header>
 
