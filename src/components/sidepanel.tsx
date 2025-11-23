@@ -23,6 +23,10 @@ import {
   toggleGroupFavorite,
   addCustomGroup,
   updateCustomGroup,
+  deleteCustomGroup,
+  addTabToGroup,
+  removeTabFromGroup,
+  cleanupDeadTabs,
 } from '@/lib/group-storage';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -77,6 +81,16 @@ export function SidePanel() {
     };
   }, [loadTabs]);
 
+  // Clean up dead tabs from groups when tabs change
+  useEffect(() => {
+    if (tabs.length > 0) {
+      const activeTabIds = tabs.map((t) => t.id);
+      cleanupDeadTabs(activeTabIds).then(() => {
+        loadCustomGroups();
+      });
+    }
+  }, [tabs]);
+
   // Use activity monitoring hook
   const { tabsWithActivity, updateActivity } = useActivityMonitor({
     tabs,
@@ -109,8 +123,6 @@ export function SidePanel() {
 
   const handleTabClick = (tabId: number) => {
     chrome.tabs.update(tabId, { active: true });
-    // In side panel, we don't close the panel - it stays open
-    // Also focus the window
     chrome.tabs.get(tabId, (tab) => {
       if (tab.windowId) {
         chrome.windows.update(tab.windowId, { focused: true });
@@ -133,12 +145,24 @@ export function SidePanel() {
     }
   };
 
+  const handleDeleteGroup = async (groupId: string) => {
+    const group = customGroups.find((g) => g.id === groupId);
+    if (group) {
+      await deleteCustomGroup(groupId);
+      await loadCustomGroups();
+      toast({
+        title: 'Group Deleted',
+        description: `"${group.name}" has been deleted. Tabs are now ungrouped.`,
+      });
+    }
+  };
+
   const handleSaveGroup = async (group: CustomGroupConfig) => {
     if (editingGroup) {
       await updateCustomGroup(group.id, group);
       toast({
         title: 'Group Updated',
-        description: `"${group.name}" has been updated successfully.`,
+        description: `"${group.name}" has been updated.`,
       });
     } else {
       await addCustomGroup(group);
@@ -152,24 +176,43 @@ export function SidePanel() {
   };
 
   const handleToggleFavorite = async (groupId: string) => {
+    const group = customGroups.find((g) => g.id === groupId);
+    const wasFavorite = group?.isFavorite;
     await toggleGroupFavorite(groupId);
     await loadCustomGroups();
-    const group = customGroups.find((g) => g.id === groupId);
     if (group) {
       toast({
-        title: group.isFavorite ? 'Removed from Favorites' : 'Added to Favorites',
-        description: `"${group.name}" ${
-          group.isFavorite ? 'removed from' : 'added to'
-        } favorites.`,
+        title: wasFavorite ? 'Removed from Favorites' : 'Added to Favorites',
+        description: `"${group.name}" ${wasFavorite ? 'removed from' : 'added to'} favorites.`,
       });
     }
   };
 
+  const handleAddTabToGroup = async (tabId: number, groupId: string) => {
+    await addTabToGroup(groupId, tabId);
+    await loadCustomGroups();
+    const group = customGroups.find((g) => g.id === groupId);
+    toast({
+      title: 'Tab Added',
+      description: `Tab added to "${group?.name || 'group'}".`,
+    });
+  };
+
+  const handleRemoveTabFromGroup = async (tabId: number, groupId: string) => {
+    await removeTabFromGroup(groupId, tabId);
+    await loadCustomGroups();
+    const group = customGroups.find((g) => g.id === groupId);
+    toast({
+      title: 'Tab Removed',
+      description: `Tab removed from "${group?.name || 'group'}".`,
+    });
+  };
+
   const handleConvertToCustom = (group: TabGroup) => {
     const customGroup: CustomGroupConfig = {
-      id: group.id.replace('auto_', 'custom_'),
+      id: `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: group.domain,
-      color: GROUP_COLORS[0],
+      color: GROUP_COLORS[Math.floor(Math.random() * GROUP_COLORS.length)],
       tabIds: group.tabs.map((tab) => tab.id),
       createdAt: Date.now(),
       lastModified: Date.now(),
@@ -204,11 +247,10 @@ export function SidePanel() {
 
   return (
     <div className="w-full h-screen flex flex-col overflow-hidden p-3 bg-background">
-      {/* Compact header for side panel */}
       <header className="flex items-center justify-between mb-3 pb-2 border-b shrink-0">
         <div className="flex items-center gap-2">
           <img
-            src={isDarkMode ? '/icons/tw_dark.png' : '/icons/tw_light.png'}
+            src={isDarkMode ? '/icons/tw_dark_icon.png' : '/icons/tw_light_icon.png'}
             alt="Tab Wise Logo"
             className="h-6 w-6"
           />
@@ -260,7 +302,11 @@ export function SidePanel() {
                   showActivity={showActivity}
                   onToggleFavorite={handleToggleFavorite}
                   onEditGroup={handleEditGroup}
+                  onDeleteGroup={handleDeleteGroup}
                   onConvertToCustom={handleConvertToCustom}
+                  onAddTabToGroup={handleAddTabToGroup}
+                  onRemoveTabFromGroup={handleRemoveTabFromGroup}
+                  customGroups={customGroups}
                 />
                 {organizedGroups.childGroups.has(group.id) &&
                   organizedGroups.childGroups.get(group.id)!.map((childGroup) => (
@@ -273,7 +319,11 @@ export function SidePanel() {
                         showActivity={showActivity}
                         onToggleFavorite={handleToggleFavorite}
                         onEditGroup={handleEditGroup}
+                        onDeleteGroup={handleDeleteGroup}
                         onConvertToCustom={handleConvertToCustom}
+                        onAddTabToGroup={handleAddTabToGroup}
+                        onRemoveTabFromGroup={handleRemoveTabFromGroup}
+                        customGroups={customGroups}
                         isNested={true}
                         nestLevel={1}
                       />

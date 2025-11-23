@@ -110,3 +110,63 @@ export async function removeTabFromGroup(
 export function generateGroupId(): string {
   return `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
+
+/**
+ * Clean up dead tab references from all groups
+ * Removes tab IDs that no longer exist in the browser
+ */
+export async function cleanupDeadTabs(activeTabIds: number[]): Promise<void> {
+  const groups = await getCustomGroups();
+  let hasChanges = false;
+
+  for (const group of groups) {
+    const validTabIds = group.tabIds.filter((id) => activeTabIds.includes(id));
+    if (validTabIds.length !== group.tabIds.length) {
+      group.tabIds = validTabIds;
+      group.lastModified = Date.now();
+      hasChanges = true;
+    }
+  }
+
+  if (hasChanges) {
+    await saveCustomGroups(groups);
+  }
+}
+
+/**
+ * Move a tab from one group to another (or remove from current group)
+ */
+export async function moveTabToGroup(
+  tabId: number,
+  targetGroupId: string | null
+): Promise<void> {
+  const groups = await getCustomGroups();
+
+  // Remove from all existing groups first
+  for (const group of groups) {
+    const index = group.tabIds.indexOf(tabId);
+    if (index !== -1) {
+      group.tabIds.splice(index, 1);
+      group.lastModified = Date.now();
+    }
+  }
+
+  // Add to target group if specified
+  if (targetGroupId) {
+    const targetGroup = groups.find((g) => g.id === targetGroupId);
+    if (targetGroup && !targetGroup.tabIds.includes(tabId)) {
+      targetGroup.tabIds.push(tabId);
+      targetGroup.lastModified = Date.now();
+    }
+  }
+
+  await saveCustomGroups(groups);
+}
+
+/**
+ * Get the group a tab belongs to (if any)
+ */
+export async function getTabGroup(tabId: number): Promise<CustomGroupConfig | null> {
+  const groups = await getCustomGroups();
+  return groups.find((g) => g.tabIds.includes(tabId)) || null;
+}

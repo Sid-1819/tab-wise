@@ -1,8 +1,8 @@
-import { X, Star, Edit2, ChevronRight, Bookmark } from 'lucide-react';
+import { X, Star, Edit2, ChevronRight, Bookmark, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TabGroup } from '@/types/tab';
+import { TabGroup, CustomGroupConfig } from '@/types/tab';
 import { TabItem } from '@/components/tab-item';
 import { cn } from '@/lib/utils';
 
@@ -14,7 +14,11 @@ interface TabGroupCardProps {
   showActivity?: boolean;
   onToggleFavorite?: (groupId: string) => void;
   onEditGroup?: (groupId: string) => void;
+  onDeleteGroup?: (groupId: string) => void;
   onConvertToCustom?: (group: TabGroup) => void;
+  onAddTabToGroup?: (tabId: number, groupId: string) => void;
+  onRemoveTabFromGroup?: (tabId: number, groupId: string) => void;
+  customGroups?: CustomGroupConfig[];
   isNested?: boolean;
   nestLevel?: number;
 }
@@ -29,7 +33,11 @@ export function TabGroupCard({
   showActivity = true,
   onToggleFavorite,
   onEditGroup,
+  onDeleteGroup,
   onConvertToCustom,
+  onAddTabToGroup,
+  onRemoveTabFromGroup,
+  customGroups = [],
   isNested = false,
   nestLevel: _nestLevel = 0,
 }: TabGroupCardProps) {
@@ -110,7 +118,7 @@ export function TabGroupCard({
               size="sm"
               className="h-8"
               onClick={() => onConvertToCustom(group)}
-              title="Convert to custom group"
+              title="Save as custom group"
             >
               <Bookmark className="h-3 w-3 mr-1" />
               Save
@@ -143,6 +151,17 @@ export function TabGroupCard({
               <Edit2 className="h-4 w-4" />
             </Button>
           )}
+          {isCustomGroup && onDeleteGroup && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              onClick={() => onDeleteGroup(group.id)}
+              title="Delete group"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="destructive"
             size="sm"
@@ -162,6 +181,10 @@ export function TabGroupCard({
             onClose={onCloseTab}
             onClick={onTabClick}
             showActivity={showActivity}
+            customGroups={customGroups}
+            currentGroupId={isCustomGroup ? group.id : undefined}
+            onAddToGroup={onAddTabToGroup}
+            onRemoveFromGroup={onRemoveTabFromGroup}
           />
         ))}
       </CardContent>

@@ -25,8 +25,8 @@
     }
   },
   "icons": {
-    "16": "icons/tw_light.png",
-    "48": "icons/tw_light.png",
-    "128": "icons/tw_light.png"
+    "16": "icons/tw_light_icon.png",
+    "48": "icons/tw_light_icon.png",
+    "128": "icons/tw_light_icon.png"
   }
 }
