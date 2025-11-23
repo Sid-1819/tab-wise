@@ -53,7 +53,6 @@ export function groupTabs(
         customName: customGroup.name,
         color: customGroup.color,
         isFavorite: customGroup.isFavorite,
-        parentGroupId: customGroup.parentGroupId,
         createdAt: customGroup.createdAt,
         lastModified: customGroup.lastModified,
         favicon: groupTabs[0]?.favIconUrl,

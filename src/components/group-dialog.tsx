@@ -29,21 +29,17 @@ export function GroupDialog({
   onSave,
   editingGroup,
   selectedTabs = [],
-  allGroups = [],
 }: GroupDialogProps) {
   const [name, setName] = useState('');
   const [color, setColor] = useState(GROUP_COLORS[0]);
-  const [parentGroupId, setParentGroupId] = useState<string>('');
 
   useEffect(() => {
     if (editingGroup) {
       setName(editingGroup.name);
       setColor(editingGroup.color);
-      setParentGroupId(editingGroup.parentGroupId || '');
     } else {
       setName('');
-      setColor(GROUP_COLORS[0]);
-      setParentGroupId('');
+      setColor(GROUP_COLORS[Math.floor(Math.random() * GROUP_COLORS.length)]);
     }
   }, [editingGroup, open]);
 
@@ -57,7 +53,6 @@ export function GroupDialog({
       name: name.trim() || 'Unnamed Group',
       color,
       tabIds,
-      parentGroupId: parentGroupId || undefined,
       isFavorite: editingGroup?.isFavorite || false,
       createdAt: editingGroup?.createdAt || Date.now(),
       lastModified: Date.now(),
@@ -66,11 +61,6 @@ export function GroupDialog({
     onSave(group);
     onOpenChange(false);
   };
-
-  // Filter out the current group and its descendants from parent options
-  const availableParentGroups = editingGroup
-    ? allGroups.filter((g) => g.id !== editingGroup.id && g.parentGroupId !== editingGroup.id)
-    : allGroups;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,7 +74,7 @@ export function GroupDialog({
               ? 'Update the group name and color.'
               : selectedTabs.length > 0
               ? `Create a custom group with ${selectedTabs.length} selected tab(s).`
-              : 'Create an empty custom group. You can add tabs to it later by converting automatic groups.'}
+              : 'Create an empty custom group. Add tabs using the menu on each tab.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -104,25 +94,6 @@ export function GroupDialog({
             <Label>Group Color</Label>
             <ColorPicker selectedColor={color} onColorSelect={setColor} />
           </div>
-
-          {availableParentGroups.length > 0 && (
-            <div className="grid gap-2">
-              <Label htmlFor="parent">Parent Group (Optional)</Label>
-              <select
-                id="parent"
-                value={parentGroupId}
-                onChange={(e) => setParentGroupId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">None (Top Level)</option>
-                {availableParentGroups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
 
         <DialogFooter>

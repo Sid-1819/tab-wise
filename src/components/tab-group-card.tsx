@@ -1,10 +1,10 @@
-import { X, Star, Edit2, ChevronRight, Bookmark, Trash2 } from 'lucide-react';
+import { X, Star, Edit2, Bookmark, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TabGroup, CustomGroupConfig } from '@/types/tab';
 import { TabItem } from '@/components/tab-item';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'; // Used for Star className
 
 interface TabGroupCardProps {
   group: TabGroup;
@@ -19,8 +19,6 @@ interface TabGroupCardProps {
   onAddTabToGroup?: (tabId: number, groupId: string) => void;
   onRemoveTabFromGroup?: (tabId: number, groupId: string) => void;
   customGroups?: CustomGroupConfig[];
-  isNested?: boolean;
-  nestLevel?: number;
 }
 
 const DEFAULT_FAVICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
@@ -38,8 +36,6 @@ export function TabGroupCard({
   onAddTabToGroup,
   onRemoveTabFromGroup,
   customGroups = [],
-  isNested = false,
-  nestLevel: _nestLevel = 0,
 }: TabGroupCardProps) {
   const handleCloseAll = () => {
     const tabIds = group.tabs.map((tab) => tab.id);
@@ -58,21 +54,14 @@ export function TabGroupCard({
 
   return (
     <Card
-      className={cn(
-        isNested && 'ml-6 border-l-4',
-        isNested && group.color && `border-l-[${group.color}]`
-      )}
       style={
-        isNested && group.color
-          ? { borderLeftColor: group.color }
-          : group.color && isCustomGroup
+        group.color && isCustomGroup
           ? { borderTopColor: group.color, borderTopWidth: '3px' }
           : undefined
       }
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="flex items-center gap-2">
-          {isNested && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
           {!isCustomGroup && (
             <img
               src={group.favicon || DEFAULT_FAVICON}

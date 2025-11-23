@@ -30,7 +30,6 @@ export interface TabGroup {
   customName?: string; // User-defined name for custom groups
   color?: string; // Custom color for the group
   isFavorite?: boolean; // Whether the group is favorited
-  parentGroupId?: string; // For nested groups
 
   // Auto-grouping metadata
   autoGroupStrategy?: AutoGroupStrategy; // Strategy used for auto-grouping
@@ -51,7 +50,6 @@ export interface CustomGroupConfig {
   name: string;
   color: string;
   tabIds: number[]; // Tab IDs that belong to this group
-  parentGroupId?: string; // For nested groups
   isFavorite?: boolean;
   createdAt: number;
   lastModified: number;

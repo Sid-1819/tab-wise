@@ -158,7 +158,10 @@ export function SidePanel() {
   };
 
   const handleSaveGroup = async (group: CustomGroupConfig) => {
-    if (editingGroup) {
+    // Check if group already exists (editing) vs new group (creating/converting)
+    const existingGroup = customGroups.find((g) => g.id === group.id);
+
+    if (existingGroup) {
       await updateCustomGroup(group.id, group);
       toast({
         title: 'Group Updated',
@@ -173,6 +176,7 @@ export function SidePanel() {
     }
     await loadCustomGroups();
     setTabsForNewGroup([]);
+    setEditingGroup(undefined);
   };
 
   const handleToggleFavorite = async (groupId: string) => {
@@ -224,23 +228,9 @@ export function SidePanel() {
 
   const totalGroups = Object.keys(groupedTabs).length;
 
-  // Organize groups with nesting
-  const organizedGroups = useMemo(() => {
-    const topLevelGroups: TabGroup[] = [];
-    const childGroups = new Map<string, TabGroup[]>();
-
-    Object.values(groupedTabs).forEach((group) => {
-      if (group.parentGroupId) {
-        if (!childGroups.has(group.parentGroupId)) {
-          childGroups.set(group.parentGroupId, []);
-        }
-        childGroups.get(group.parentGroupId)!.push(group);
-      } else {
-        topLevelGroups.push(group);
-      }
-    });
-
-    return { topLevelGroups, childGroups };
+  // Get all groups as a flat list
+  const allGroups = useMemo(() => {
+    return Object.values(groupedTabs);
   }, [groupedTabs]);
 
   const isDarkMode = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -292,44 +282,22 @@ export function SidePanel() {
 
         <ScrollArea className="flex-1 min-h-0">
           <div className="space-y-3 pr-2">
-            {organizedGroups.topLevelGroups.map((group) => (
-              <div key={group.id}>
-                <TabGroupCard
-                  group={group}
-                  onCloseTab={handleCloseTab}
-                  onCloseAll={handleCloseAll}
-                  onTabClick={handleTabClick}
-                  showActivity={showActivity}
-                  onToggleFavorite={handleToggleFavorite}
-                  onEditGroup={handleEditGroup}
-                  onDeleteGroup={handleDeleteGroup}
-                  onConvertToCustom={handleConvertToCustom}
-                  onAddTabToGroup={handleAddTabToGroup}
-                  onRemoveTabFromGroup={handleRemoveTabFromGroup}
-                  customGroups={customGroups}
-                />
-                {organizedGroups.childGroups.has(group.id) &&
-                  organizedGroups.childGroups.get(group.id)!.map((childGroup) => (
-                    <div key={childGroup.id} className="mt-2">
-                      <TabGroupCard
-                        group={childGroup}
-                        onCloseTab={handleCloseTab}
-                        onCloseAll={handleCloseAll}
-                        onTabClick={handleTabClick}
-                        showActivity={showActivity}
-                        onToggleFavorite={handleToggleFavorite}
-                        onEditGroup={handleEditGroup}
-                        onDeleteGroup={handleDeleteGroup}
-                        onConvertToCustom={handleConvertToCustom}
-                        onAddTabToGroup={handleAddTabToGroup}
-                        onRemoveTabFromGroup={handleRemoveTabFromGroup}
-                        customGroups={customGroups}
-                        isNested={true}
-                        nestLevel={1}
-                      />
-                    </div>
-                  ))}
-              </div>
+            {allGroups.map((group) => (
+              <TabGroupCard
+                key={group.id}
+                group={group}
+                onCloseTab={handleCloseTab}
+                onCloseAll={handleCloseAll}
+                onTabClick={handleTabClick}
+                showActivity={showActivity}
+                onToggleFavorite={handleToggleFavorite}
+                onEditGroup={handleEditGroup}
+                onDeleteGroup={handleDeleteGroup}
+                onConvertToCustom={handleConvertToCustom}
+                onAddTabToGroup={handleAddTabToGroup}
+                onRemoveTabFromGroup={handleRemoveTabFromGroup}
+                customGroups={customGroups}
+              />
             ))}
           </div>
         </ScrollArea>
