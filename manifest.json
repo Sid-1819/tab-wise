@@ -1,16 +1,32 @@
 {
   "manifest_version": 3,
   "name": "Tab Wise",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Organize and manage your Chrome tabs efficiently with a modern React interface",
-  "permissions": ["tabs", "system.memory", "storage"],
+  "permissions": ["tabs", "system.memory", "storage", "sidePanel", "contextMenus"],
   "host_permissions": ["<all_urls>"],
   "action": {
-    "default_popup": "index.html",
-    "default_title": "Tab Wise"
+    "default_title": "Open Tab Wise"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Open Tab Wise"
+    }
   },
   "icons": {
     "16": "icons/tw_light.png",
-    "48": "icons/tw_light.png"
+    "48": "icons/tw_light.png",
+    "128": "icons/tw_light.png"
   }
 }

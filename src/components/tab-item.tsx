@@ -1,21 +1,22 @@
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MemoryBadge } from '@/components/memory-badge';
+import { ActivityBadge } from '@/components/activity-badge';
 import { TabInfo } from '@/types/tab';
+import { TabActivity } from '@/lib/activity-utils';
 import { cn } from '@/lib/utils';
 
 interface TabItemProps {
-  tab: TabInfo;
+  tab: TabInfo & { activity?: TabActivity };
   onClose: (tabId: number) => void;
   onClick: (tabId: number) => void;
-  showMemory?: boolean;
+  showActivity?: boolean;
 }
 
 const DEFAULT_FAVICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
 
-export function TabItem({ tab, onClose, onClick, showMemory = true }: TabItemProps) {
-  const truncatedTitle = tab.title.length > 45
-    ? tab.title.slice(0, 45) + '...'
+export function TabItem({ tab, onClose, onClick, showActivity = true }: TabItemProps) {
+  const truncatedTitle = tab.title.length > 40
+    ? tab.title.slice(0, 40) + '...'
     : tab.title;
 
   return (
@@ -36,8 +37,13 @@ export function TabItem({ tab, onClose, onClick, showMemory = true }: TabItemPro
       />
       <span className="flex-1 text-sm truncate">{truncatedTitle}</span>
 
-      {showMemory && tab.memory && tab.memory > 0 && (
-        <MemoryBadge memoryBytes={tab.memory} showIcon={false} />
+      {showActivity && tab.activity && (
+        <ActivityBadge
+          activity={tab.activity}
+          showLastVisited={true}
+          showTimeSpent={false}
+          compact={true}
+        />
       )}
 
       <Button

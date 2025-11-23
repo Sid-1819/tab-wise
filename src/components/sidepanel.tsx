@@ -1,11 +1,9 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SearchBar } from '@/components/search-bar';
 import { TabGroupCard } from '@/components/tab-group-card';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { MemoryStats } from '@/components/memory-stats';
-import { OptimizeButton } from '@/components/optimize-button';
-import { SystemMemoryCard } from '@/components/system-memory-card';
+import { ActivityStats } from '@/components/activity-stats';
 import { Toaster } from '@/components/ui/toaster';
 import { GroupToolbar } from '@/components/group-toolbar';
 import { GroupDialog } from '@/components/group-dialog';
@@ -19,7 +17,7 @@ import {
   GROUP_COLORS,
 } from '@/types/tab';
 import { groupTabs, filterTabs } from '@/lib/tab-utils';
-import { useMemoryMonitor } from '@/hooks/use-memory-monitor';
+import { useActivityMonitor } from '@/hooks/use-activity-monitor';
 import {
   getCustomGroups,
   toggleGroupFavorite,
@@ -28,10 +26,10 @@ import {
 } from '@/lib/group-storage';
 import { useToast } from '@/components/ui/use-toast';
 
-export function Popup() {
+export function SidePanel() {
   const [tabs, setTabs] = useState<TabInfo[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSystemMemory, setShowSystemMemory] = useState(true);
+  const [showActivity, setShowActivity] = useState(true);
   const [customGroups, setCustomGroups] = useState<CustomGroupConfig[]>([]);
   const [autoGroupStrategy, setAutoGroupStrategy] =
     useState<AutoGroupStrategy>('domain');
@@ -42,12 +40,7 @@ export function Popup() {
   const { toast } = useToast();
   const { theme } = useTheme();
 
-  useEffect(() => {
-    loadTabs();
-    loadCustomGroups();
-  }, []);
-
-  const loadTabs = () => {
+  const loadTabs = useCallback(() => {
     chrome.tabs.query({}, (chromeTabs) => {
       const tabsInfo: TabInfo[] = chromeTabs.map((tab) => ({
         id: tab.id!,
@@ -59,24 +52,41 @@ export function Popup() {
       }));
       setTabs(tabsInfo);
     });
-  };
+  }, []);
 
   const loadCustomGroups = async () => {
     const groups = await getCustomGroups();
     setCustomGroups(groups);
   };
 
-  // Use memory monitoring hook
-  const { tabsWithMemory, updateMemory } = useMemoryMonitor({
+  useEffect(() => {
+    loadTabs();
+    loadCustomGroups();
+
+    // Listen for real-time tab updates from background script
+    const handleMessage = (message: { action: string; payload?: unknown }) => {
+      if (message.action === 'tabsUpdated') {
+        loadTabs();
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(handleMessage);
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage);
+    };
+  }, [loadTabs]);
+
+  // Use activity monitoring hook
+  const { tabsWithActivity, updateActivity } = useActivityMonitor({
     tabs,
-    autoAlert: true,
-    refreshInterval: 30000, // 30 seconds
+    refreshInterval: 10000, // 10 seconds
   });
 
   const filteredTabs = useMemo(() => {
-    if (!searchQuery) return tabsWithMemory;
-    return filterTabs(tabsWithMemory, searchQuery);
-  }, [tabsWithMemory, searchQuery]);
+    if (!searchQuery) return tabsWithActivity;
+    return filterTabs(tabsWithActivity, searchQuery);
+  }, [tabsWithActivity, searchQuery]);
 
   const groupedTabs: GroupedTabs = useMemo(() => {
     const strategy = enableAutoGrouping ? autoGroupStrategy : 'domain';
@@ -86,24 +96,26 @@ export function Popup() {
   const handleCloseTab = (tabId: number) => {
     chrome.tabs.remove(tabId, () => {
       setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== tabId));
-      updateMemory();
+      updateActivity();
     });
   };
 
   const handleCloseAll = (tabIds: number[]) => {
     chrome.tabs.remove(tabIds, () => {
       setTabs((prevTabs) => prevTabs.filter((tab) => !tabIds.includes(tab.id)));
-      updateMemory();
+      updateActivity();
     });
-  };
-
-  const handleOptimize = (tabIds: number[]) => {
-    handleCloseAll(tabIds);
   };
 
   const handleTabClick = (tabId: number) => {
     chrome.tabs.update(tabId, { active: true });
-    window.close();
+    // In side panel, we don't close the panel - it stays open
+    // Also focus the window
+    chrome.tabs.get(tabId, (tab) => {
+      if (tab.windowId) {
+        chrome.windows.update(tab.windowId, { focused: true });
+      }
+    });
   };
 
   const handleCreateGroup = () => {
@@ -188,63 +200,56 @@ export function Popup() {
     return { topLevelGroups, childGroups };
   }, [groupedTabs]);
 
+  const isDarkMode = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
   return (
-    <div className="w-[600px] overflow-hidden p-4">
-      <header className="flex items-center justify-between mb-5 pb-3 border-b">
-        <div className="flex items-center gap-3">
-          <img
-            src={
-              theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-                ? '/icons/tw_dark.png'
-                : '/icons/tw_light.png'
-            }
-            alt="Tab Wise Logo"
-            className="h-8 w-8"
-          />
-          <span className="text-xl font-bold">Tab Wise</span>
-        </div>
+    <div className="w-full h-screen flex flex-col overflow-hidden p-3 bg-background">
+      {/* Compact header for side panel */}
+      <header className="flex items-center justify-between mb-3 pb-2 border-b shrink-0">
         <div className="flex items-center gap-2">
+          <img
+            src={isDarkMode ? '/icons/tw_dark.png' : '/icons/tw_light.png'}
+            alt="Tab Wise Logo"
+            className="h-6 w-6"
+          />
+          <span className="text-lg font-bold">Tab Wise</span>
+        </div>
+        <div className="flex items-center gap-1">
           <button
-            onClick={() => setShowSystemMemory(!showSystemMemory)}
-            className="text-xs px-2 py-1 rounded-md bg-muted hover:bg-muted/80 transition-colors"
-            title={showSystemMemory ? "Hide system memory" : "Show system memory"}
+            onClick={() => setShowActivity(!showActivity)}
+            className="text-xs px-1.5 py-0.5 rounded-md bg-muted hover:bg-muted/80 transition-colors"
+            title={showActivity ? "Hide activity" : "Show activity"}
           >
-            {showSystemMemory ? "Hide Memory" : "Show Memory"}
+            {showActivity ? "Hide" : "Activity"}
           </button>
           <ThemeToggle />
         </div>
       </header>
 
-      <main>
-        <SearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          totalTabs={filteredTabs.length}
-          totalGroups={totalGroups}
-        />
+      <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+        <div className="shrink-0">
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            totalTabs={filteredTabs.length}
+            totalGroups={totalGroups}
+          />
 
-        <SystemMemoryCard visible={showSystemMemory} />
+          {showActivity && (
+            <ActivityStats tabs={tabsWithActivity} totalGroups={totalGroups} />
+          )}
 
-        <MemoryStats tabs={tabsWithMemory} totalGroups={totalGroups} />
-
-        <div className="mb-4">
-          <OptimizeButton
-            tabs={tabsWithMemory}
-            onOptimize={handleOptimize}
-            thresholdMB={100}
+          <GroupToolbar
+            onCreateGroup={handleCreateGroup}
+            autoGroupStrategy={autoGroupStrategy}
+            onStrategyChange={setAutoGroupStrategy}
+            enableAutoGrouping={enableAutoGrouping}
+            onToggleAutoGrouping={setEnableAutoGrouping}
           />
         </div>
 
-        <GroupToolbar
-          onCreateGroup={handleCreateGroup}
-          autoGroupStrategy={autoGroupStrategy}
-          onStrategyChange={setAutoGroupStrategy}
-          enableAutoGrouping={enableAutoGrouping}
-          onToggleAutoGrouping={setEnableAutoGrouping}
-        />
-
-        <ScrollArea className="h-[500px]">
-          <div className="space-y-4 pr-4">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="space-y-3 pr-2">
             {organizedGroups.topLevelGroups.map((group) => (
               <div key={group.id}>
                 <TabGroupCard
@@ -252,7 +257,7 @@ export function Popup() {
                   onCloseTab={handleCloseTab}
                   onCloseAll={handleCloseAll}
                   onTabClick={handleTabClick}
-                  showMemory={true}
+                  showActivity={showActivity}
                   onToggleFavorite={handleToggleFavorite}
                   onEditGroup={handleEditGroup}
                   onConvertToCustom={handleConvertToCustom}
@@ -265,7 +270,7 @@ export function Popup() {
                         onCloseTab={handleCloseTab}
                         onCloseAll={handleCloseAll}
                         onTabClick={handleTabClick}
-                        showMemory={true}
+                        showActivity={showActivity}
                         onToggleFavorite={handleToggleFavorite}
                         onEditGroup={handleEditGroup}
                         onConvertToCustom={handleConvertToCustom}

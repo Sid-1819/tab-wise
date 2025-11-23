@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TabGroup } from '@/types/tab';
 import { TabItem } from '@/components/tab-item';
-import { formatBytes, calculateTotalMemory } from '@/lib/memory-utils';
 import { cn } from '@/lib/utils';
 
 interface TabGroupCardProps {
@@ -12,7 +11,7 @@ interface TabGroupCardProps {
   onCloseTab: (tabId: number) => void;
   onCloseAll: (tabIds: number[]) => void;
   onTabClick: (tabId: number) => void;
-  showMemory?: boolean;
+  showActivity?: boolean;
   onToggleFavorite?: (groupId: string) => void;
   onEditGroup?: (groupId: string) => void;
   onConvertToCustom?: (group: TabGroup) => void;
@@ -27,7 +26,7 @@ export function TabGroupCard({
   onCloseTab,
   onCloseAll,
   onTabClick,
-  showMemory = true,
+  showActivity = true,
   onToggleFavorite,
   onEditGroup,
   onConvertToCustom,
@@ -39,11 +38,15 @@ export function TabGroupCard({
     onCloseAll(tabIds);
   };
 
-  const totalMemory = calculateTotalMemory(group.tabs);
-  const hasMemoryData = totalMemory > 0;
-
   const displayName = group.customName || group.domain;
   const isCustomGroup = group.type === 'custom';
+
+  // Calculate activity stats for the group
+  const activeTabsInGroup = group.tabs.filter((tab) => {
+    if (!tab.activity) return false;
+    const now = Date.now();
+    return now - tab.activity.lastVisited < 30 * 60 * 1000; // Active in last 30 mins
+  }).length;
 
   return (
     <Card
@@ -84,9 +87,9 @@ export function TabGroupCard({
           {group.isFavorite && (
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
           )}
-          {showMemory && hasMemoryData && (
-            <Badge variant="outline" className="font-mono text-xs">
-              {formatBytes(totalMemory)}
+          {showActivity && activeTabsInGroup > 0 && (
+            <Badge variant="outline" className="text-xs text-green-600">
+              {activeTabsInGroup} active
             </Badge>
           )}
           {isCustomGroup && (
@@ -158,7 +161,7 @@ export function TabGroupCard({
             tab={tab}
             onClose={onCloseTab}
             onClick={onTabClick}
-            showMemory={showMemory}
+            showActivity={showActivity}
           />
         ))}
       </CardContent>
