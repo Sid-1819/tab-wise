@@ -11,6 +11,7 @@ interface TabGroupCardProps {
   onCloseTab: (tabId: number) => void;
   onCloseAll: (tabIds: number[]) => void;
   onTabClick: (tabId: number) => void;
+  onDuplicateTab?: (tabId: number) => void;
   showActivity?: boolean;
   onToggleFavorite?: (groupId: string) => void;
   onEditGroup?: (groupId: string) => void;
@@ -28,6 +29,7 @@ export function TabGroupCard({
   onCloseTab,
   onCloseAll,
   onTabClick,
+  onDuplicateTab,
   showActivity = true,
   onToggleFavorite,
   onEditGroup,
@@ -169,6 +171,7 @@ export function TabGroupCard({
             tab={tab}
             onClose={onCloseTab}
             onClick={onTabClick}
+            onDuplicate={onDuplicateTab}
             showActivity={showActivity}
             customGroups={customGroups}
             currentGroupId={isCustomGroup ? group.id : undefined}

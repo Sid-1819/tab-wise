@@ -1,4 +1,4 @@
-import { X, MoreVertical, FolderPlus, FolderMinus } from 'lucide-react';
+import { X, MoreVertical, FolderPlus, FolderMinus, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ActivityBadge } from '@/components/activity-badge';
 import {
@@ -20,6 +20,7 @@ interface TabItemProps {
   currentGroupId?: string;
   onAddToGroup?: (tabId: number, groupId: string) => void;
   onRemoveFromGroup?: (tabId: number, groupId: string) => void;
+  onDuplicate?: (tabId: number) => void;
 }
 
 const DEFAULT_FAVICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
@@ -33,6 +34,7 @@ export function TabItem({
   currentGroupId: _currentGroupId,
   onAddToGroup,
   onRemoveFromGroup,
+  onDuplicate,
 }: TabItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -61,11 +63,15 @@ export function TabItem({
     }
   };
 
+  // Check if this tab is currently active
+  const isActive = tab.active === true;
+
   return (
     <div
       className={cn(
         "flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer group",
-        "hover:bg-accent"
+        "hover:bg-accent",
+        isActive && "bg-primary/10 border-l-2 border-primary"
       )}
       onClick={() => onClick(tab.id)}
     >
@@ -77,7 +83,12 @@ export function TabItem({
           e.currentTarget.src = DEFAULT_FAVICON;
         }}
       />
-      <span className="flex-1 text-sm truncate">{truncatedTitle}</span>
+      <span className={cn(
+        "flex-1 text-sm truncate",
+        isActive && "font-semibold text-primary"
+      )}>
+        {truncatedTitle}
+      </span>
 
       {showActivity && tab.activity && (
         <ActivityBadge
@@ -89,7 +100,7 @@ export function TabItem({
       )}
 
       {/* Group management menu */}
-      {(customGroups.length > 0 || isInCustomGroup) && (
+      {(customGroups.length > 0 || isInCustomGroup || onDuplicate) && (
         <Popover open={menuOpen} onOpenChange={setMenuOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -108,9 +119,25 @@ export function TabItem({
               Manage Tab
             </div>
 
+            {/* Duplicate tab option */}
+            {onDuplicate && (
+              <button
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate(tab.id);
+                  setMenuOpen(false);
+                }}
+              >
+                <Copy className="h-3 w-3" />
+                <span>Duplicate Tab</span>
+              </button>
+            )}
+
             {/* Add to group options */}
             {availableGroups.length > 0 && (
               <>
+                {onDuplicate && <div className="border-t my-1" />}
                 <div className="text-xs text-muted-foreground px-2 py-1 mt-1">
                   Add to group:
                 </div>
@@ -151,7 +178,7 @@ export function TabItem({
               </>
             )}
 
-            {availableGroups.length === 0 && !isInCustomGroup && (
+            {availableGroups.length === 0 && !isInCustomGroup && !onDuplicate && (
               <div className="text-xs text-muted-foreground px-2 py-2">
                 No groups available. Create a group first.
               </div>

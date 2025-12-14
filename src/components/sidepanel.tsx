@@ -130,6 +130,24 @@ export function SidePanel() {
     });
   };
 
+  const handleDuplicateTab = (tabId: number) => {
+    chrome.tabs.duplicate(tabId, () => {
+      if (chrome.runtime.lastError) {
+        toast({
+          title: 'Error',
+          description: 'Failed to duplicate tab. ' + chrome.runtime.lastError.message,
+          variant: 'destructive',
+        });
+      } else {
+        loadTabs(); // Refresh tabs list
+        toast({
+          title: 'Tab Duplicated',
+          description: 'Tab has been duplicated successfully.',
+        });
+      }
+    });
+  };
+
   const handleCreateGroup = () => {
     setEditingGroup(undefined);
     setTabsForNewGroup([]);
@@ -289,6 +307,7 @@ export function SidePanel() {
                 onCloseTab={handleCloseTab}
                 onCloseAll={handleCloseAll}
                 onTabClick={handleTabClick}
+                onDuplicateTab={handleDuplicateTab}
                 showActivity={showActivity}
                 onToggleFavorite={handleToggleFavorite}
                 onEditGroup={handleEditGroup}
