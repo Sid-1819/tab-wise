@@ -15,6 +15,12 @@ interface GroupToolbarProps {
   onStrategyChange: (strategy: AutoGroupStrategy) => void;
   enableAutoGrouping: boolean;
   onToggleAutoGrouping: (enabled: boolean) => void;
+  lastUsedInterval?: number;
+  onLastUsedIntervalChange?: (interval: number) => void;
+  enableAutoDelete?: boolean;
+  onToggleAutoDelete?: (enabled: boolean) => void;
+  autoDeleteThreshold?: number;
+  onAutoDeleteThresholdChange?: (threshold: number) => void;
 }
 
 const STRATEGY_LABELS: Record<AutoGroupStrategy, string> = {
@@ -23,6 +29,7 @@ const STRATEGY_LABELS: Record<AutoGroupStrategy, string> = {
   'time-of-day': 'By Time of Day',
   'activity-pattern': 'By Activity',
   'project-context': 'By Project',
+  'last-used': 'By Last Used',
 };
 
 export function GroupToolbar({
@@ -31,6 +38,12 @@ export function GroupToolbar({
   onStrategyChange,
   enableAutoGrouping,
   onToggleAutoGrouping,
+  lastUsedInterval = 1,
+  onLastUsedIntervalChange,
+  enableAutoDelete = false,
+  onToggleAutoDelete,
+  autoDeleteThreshold = 24 * 60 * 60 * 1000,
+  onAutoDeleteThresholdChange,
 }: GroupToolbarProps) {
   return (
     <div className="flex items-center justify-between gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
@@ -102,6 +115,61 @@ export function GroupToolbar({
                     'Group tabs by activity type (work, social, etc.)'}
                   {autoGroupStrategy === 'project-context' &&
                     'Group tabs by project based on URL patterns'}
+                  {autoGroupStrategy === 'last-used' &&
+                    'Group tabs by when they were last visited'}
+                </p>
+
+                {/* Last Used Interval Selector */}
+                {autoGroupStrategy === 'last-used' && onLastUsedIntervalChange && (
+                  <div className="grid gap-2 mt-2">
+                    <Label>Time Interval</Label>
+                    <select
+                      value={lastUsedInterval}
+                      onChange={(e) => onLastUsedIntervalChange(Number(e.target.value))}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value={1}>1 hour</option>
+                      <option value={2}>2 hours</option>
+                      <option value={3}>3 hours</option>
+                      <option value={4}>4 hours</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Auto-Delete Grouping Settings */}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="auto-delete" className="flex flex-col gap-1">
+                <span>Auto-Delete Grouping</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Show group of tabs to delete
+                </span>
+              </Label>
+              <Switch
+                id="auto-delete"
+                checked={enableAutoDelete}
+                onCheckedChange={onToggleAutoDelete}
+              />
+            </div>
+
+            {enableAutoDelete && onAutoDeleteThresholdChange && (
+              <div className="grid gap-2">
+                <Label>Delete Threshold</Label>
+                <select
+                  value={autoDeleteThreshold / (60 * 60 * 1000)}
+                  onChange={(e) => onAutoDeleteThresholdChange(Number(e.target.value) * 60 * 60 * 1000)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value={4}>4 hours</option>
+                  <option value={8}>8 hours</option>
+                  <option value={12}>12 hours</option>
+                  <option value={24}>24 hours</option>
+                  <option value={48}>48 hours</option>
+                  <option value={168}>1 week</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Tabs not visited within this time will appear in the delete group
                 </p>
               </div>
             )}

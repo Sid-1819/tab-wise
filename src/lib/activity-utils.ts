@@ -175,3 +175,21 @@ export function getActivityStatus(lastVisited: number): 'active' | 'recent' | 'i
   if (minutes < 120) return 'idle';
   return 'stale';
 }
+
+/**
+ * Get time since last used in milliseconds
+ */
+export function getTimeSinceLastUsed(tabId: number, activityData: ActivityData): number | null {
+  const activity = activityData[tabId];
+  if (!activity) return null;
+  return Date.now() - activity.lastVisited;
+}
+
+/**
+ * Check if a tab is stale (not visited within threshold)
+ */
+export function isTabStale(tabId: number, threshold: number, activityData: ActivityData): boolean {
+  const timeSince = getTimeSinceLastUsed(tabId, activityData);
+  if (timeSince === null) return true; // No activity data = stale
+  return timeSince > threshold;
+}

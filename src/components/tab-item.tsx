@@ -1,4 +1,4 @@
-import { X, MoreVertical, FolderPlus, FolderMinus, Copy } from 'lucide-react';
+import { X, MoreVertical, FolderPlus, FolderMinus, Copy, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ActivityBadge } from '@/components/activity-badge';
 import {
@@ -21,6 +21,7 @@ interface TabItemProps {
   onAddToGroup?: (tabId: number, groupId: string) => void;
   onRemoveFromGroup?: (tabId: number, groupId: string) => void;
   onDuplicate?: (tabId: number) => void;
+  onToggleImportant?: (tabId: number) => void;
 }
 
 const DEFAULT_FAVICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
@@ -35,6 +36,7 @@ export function TabItem({
   onAddToGroup,
   onRemoveFromGroup,
   onDuplicate,
+  onToggleImportant,
 }: TabItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -99,8 +101,12 @@ export function TabItem({
         />
       )}
 
+      {tab.isImportant && (
+        <Shield className="h-4 w-4 fill-amber-500 text-amber-500 shrink-0" />
+      )}
+
       {/* Group management menu */}
-      {(customGroups.length > 0 || isInCustomGroup || onDuplicate) && (
+      {(customGroups.length > 0 || isInCustomGroup || onDuplicate || onToggleImportant) && (
         <Popover open={menuOpen} onOpenChange={setMenuOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -119,19 +125,37 @@ export function TabItem({
               Manage Tab
             </div>
 
-            {/* Duplicate tab option */}
-            {onDuplicate && (
+            {/* Mark as Important option */}
+            {onToggleImportant && (
               <button
                 className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDuplicate(tab.id);
+                  onToggleImportant(tab.id);
                   setMenuOpen(false);
                 }}
               >
-                <Copy className="h-3 w-3" />
-                <span>Duplicate Tab</span>
+                <Shield className={cn('h-3 w-3', tab.isImportant && 'fill-amber-500 text-amber-500')} />
+                <span>{tab.isImportant ? 'Remove Important' : 'Mark as Important'}</span>
               </button>
+            )}
+
+            {/* Duplicate tab option */}
+            {onDuplicate && (
+              <>
+                {onToggleImportant && <div className="border-t my-1" />}
+                <button
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDuplicate(tab.id);
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Copy className="h-3 w-3" />
+                  <span>Duplicate Tab</span>
+                </button>
+              </>
             )}
 
             {/* Add to group options */}
@@ -178,7 +202,7 @@ export function TabItem({
               </>
             )}
 
-            {availableGroups.length === 0 && !isInCustomGroup && !onDuplicate && (
+            {availableGroups.length === 0 && !isInCustomGroup && !onDuplicate && !onToggleImportant && (
               <div className="text-xs text-muted-foreground px-2 py-2">
                 No groups available. Create a group first.
               </div>

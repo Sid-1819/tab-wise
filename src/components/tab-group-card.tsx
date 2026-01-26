@@ -1,4 +1,4 @@
-import { X, Star, Edit2, Bookmark, Trash2 } from 'lucide-react';
+import { X, Shield, Edit2, Bookmark, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,12 +13,13 @@ interface TabGroupCardProps {
   onTabClick: (tabId: number) => void;
   onDuplicateTab?: (tabId: number) => void;
   showActivity?: boolean;
-  onToggleFavorite?: (groupId: string) => void;
+  onToggleImportant?: (groupId: string) => void;
   onEditGroup?: (groupId: string) => void;
   onDeleteGroup?: (groupId: string) => void;
   onConvertToCustom?: (group: TabGroup) => void;
   onAddTabToGroup?: (tabId: number, groupId: string) => void;
   onRemoveTabFromGroup?: (tabId: number, groupId: string) => void;
+  onToggleTabImportant?: (tabId: number) => void;
   customGroups?: CustomGroupConfig[];
 }
 
@@ -31,12 +32,13 @@ export function TabGroupCard({
   onTabClick,
   onDuplicateTab,
   showActivity = true,
-  onToggleFavorite,
+  onToggleImportant,
   onEditGroup,
   onDeleteGroup,
   onConvertToCustom,
   onAddTabToGroup,
   onRemoveTabFromGroup,
+  onToggleTabImportant,
   customGroups = [],
 }: TabGroupCardProps) {
   const handleCloseAll = () => {
@@ -83,8 +85,8 @@ export function TabGroupCard({
           <span className="font-medium">
             {displayName} ({group.tabs.length})
           </span>
-          {group.isFavorite && (
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+          {group.isImportant && (
+            <Shield className="h-4 w-4 fill-amber-500 text-amber-500" />
           )}
           {showActivity && activeTabsInGroup > 0 && (
             <Badge variant="outline" className="text-xs text-green-600">
@@ -106,27 +108,26 @@ export function TabGroupCard({
           {!isCustomGroup && onConvertToCustom && (
             <Button
               variant="outline"
-              size="sm"
-              className="h-8"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => onConvertToCustom(group)}
               title="Save as custom group"
             >
-              <Bookmark className="h-3 w-3 mr-1" />
-              Save
+              <Bookmark className="h-4 w-4" />
             </Button>
           )}
-          {isCustomGroup && onToggleFavorite && (
+          {isCustomGroup && onToggleImportant && (
             <Button
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0"
-              onClick={() => onToggleFavorite(group.id)}
-              title={group.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              onClick={() => onToggleImportant(group.id)}
+              title={group.isImportant ? 'Remove important mark' : 'Mark as important'}
             >
-              <Star
+              <Shield
                 className={cn(
                   'h-4 w-4',
-                  group.isFavorite && 'fill-yellow-400 text-yellow-400'
+                  group.isImportant && 'fill-amber-500 text-amber-500'
                 )}
               />
             </Button>
@@ -155,30 +156,37 @@ export function TabGroupCard({
           )}
           <Button
             variant="destructive"
-            size="sm"
-            className="h-8"
+            size="icon"
+            className="h-8 w-8"
             onClick={handleCloseAll}
+            title="Close all tabs"
           >
-            <X className="h-3 w-3 mr-1" />
-            Close All
+            <X className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-1">
-        {group.tabs.map((tab) => (
-          <TabItem
-            key={tab.id}
-            tab={tab}
-            onClose={onCloseTab}
-            onClick={onTabClick}
-            onDuplicate={onDuplicateTab}
-            showActivity={showActivity}
-            customGroups={customGroups}
-            currentGroupId={isCustomGroup ? group.id : undefined}
-            onAddToGroup={onAddTabToGroup}
-            onRemoveFromGroup={onRemoveTabFromGroup}
-          />
-        ))}
+        {group.tabs.length === 0 ? (
+          <div className="text-sm text-muted-foreground text-center py-4">
+            No tabs in this group
+          </div>
+        ) : (
+          group.tabs.map((tab) => (
+            <TabItem
+              key={tab.id}
+              tab={tab}
+              onClose={onCloseTab}
+              onClick={onTabClick}
+              onDuplicate={onDuplicateTab}
+              showActivity={showActivity}
+              customGroups={customGroups}
+              currentGroupId={isCustomGroup ? group.id : undefined}
+              onAddToGroup={onAddTabToGroup}
+              onRemoveFromGroup={onRemoveTabFromGroup}
+              onToggleImportant={onToggleTabImportant}
+            />
+          ))
+        )}
       </CardContent>
     </Card>
   );

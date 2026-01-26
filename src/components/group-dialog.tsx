@@ -53,7 +53,7 @@ export function GroupDialog({
       name: name.trim() || 'Unnamed Group',
       color,
       tabIds,
-      isFavorite: editingGroup?.isFavorite || false,
+      isImportant: editingGroup?.isImportant || false,
       createdAt: editingGroup?.createdAt || Date.now(),
       lastModified: Date.now(),
     };

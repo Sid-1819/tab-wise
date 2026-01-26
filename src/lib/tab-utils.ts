@@ -4,6 +4,7 @@ import {
   DomainMapping,
   AutoGroupStrategy,
   CustomGroupConfig,
+  TabGroup,
 } from '@/types/tab';
 
 const KNOWN_DOMAINS: DomainMapping = {
@@ -32,34 +33,38 @@ export function prettifyDomain(domain: string): string {
 export function groupTabs(
   tabs: TabInfo[],
   strategy: AutoGroupStrategy = 'domain',
-  customGroups: CustomGroupConfig[] = []
+  customGroups: CustomGroupConfig[] = [],
+  importantTabs: number[] = [],
+  importantGroups: string[] = [],
+  lastUsedInterval: number = 1,
+  enableAutoDelete: boolean = false,
+  autoDeleteThreshold: number = 24 * 60 * 60 * 1000
 ): GroupedTabs {
   const groups: GroupedTabs = {};
 
-  // First, handle custom groups
+  // First, handle custom groups - always show them, even if empty
   const tabsInCustomGroups = new Set<number>();
   customGroups.forEach((customGroup) => {
     const groupTabs = tabs.filter((tab) =>
       customGroup.tabIds.includes(tab.id)
     );
 
-    if (groupTabs.length > 0) {
-      const groupKey = customGroup.id;
-      groups[groupKey] = {
-        id: customGroup.id,
-        domain: customGroup.name,
-        tabs: groupTabs,
-        type: 'custom',
-        customName: customGroup.name,
-        color: customGroup.color,
-        isFavorite: customGroup.isFavorite,
-        createdAt: customGroup.createdAt,
-        lastModified: customGroup.lastModified,
-        favicon: groupTabs[0]?.favIconUrl,
-      };
+    // Always create the group, even if empty
+    const groupKey = customGroup.id;
+    groups[groupKey] = {
+      id: customGroup.id,
+      domain: customGroup.name,
+      tabs: groupTabs,
+      type: 'custom',
+      customName: customGroup.name,
+      color: customGroup.color,
+      isImportant: customGroup.isImportant,
+      createdAt: customGroup.createdAt,
+      lastModified: customGroup.lastModified,
+      favicon: groupTabs[0]?.favIconUrl,
+    };
 
-      groupTabs.forEach((tab) => tabsInCustomGroups.add(tab.id));
-    }
+    groupTabs.forEach((tab) => tabsInCustomGroups.add(tab.id));
   });
 
   // Then, apply auto-grouping to remaining tabs
@@ -75,18 +80,34 @@ export function groupTabs(
     groupByActivityPattern(remainingTabs, groups);
   } else if (strategy === 'project-context') {
     groupByProjectContext(remainingTabs, groups);
+  } else if (strategy === 'last-used') {
+    groupByLastUsed(remainingTabs, groups, lastUsedInterval, importantTabs);
   }
 
-  // Sort groups: favorites first, then by tab count
+  // Add auto-delete group if enabled
+  if (enableAutoDelete) {
+    const autoDeleteGroup = createAutoDeleteGroup(
+      remainingTabs,
+      autoDeleteThreshold,
+      importantTabs,
+      importantGroups,
+      customGroups
+    );
+    if (autoDeleteGroup && autoDeleteGroup.tabs.length > 0) {
+      groups[autoDeleteGroup.id] = autoDeleteGroup;
+    }
+  }
+
+  // Sort groups: important first, then by tab count
   const sortedGroups: GroupedTabs = {};
   Object.keys(groups)
     .sort((a, b) => {
       const groupA = groups[a];
       const groupB = groups[b];
 
-      // Favorites first
-      if (groupA.isFavorite && !groupB.isFavorite) return -1;
-      if (!groupA.isFavorite && groupB.isFavorite) return 1;
+      // Important first
+      if (groupA.isImportant && !groupB.isImportant) return -1;
+      if (!groupA.isImportant && groupB.isImportant) return 1;
 
       // Then by tab count
       return groupB.tabs.length - groupA.tabs.length;
@@ -309,4 +330,113 @@ export function filterTabs(
       tab.title.toLowerCase().includes(lowerQuery) ||
       tab.url.toLowerCase().includes(lowerQuery)
   );
+}
+
+/**
+ * Group tabs by last used time
+ */
+function groupByLastUsed(
+  tabs: TabInfo[],
+  groups: GroupedTabs,
+  intervalHours: number,
+  importantTabs: number[]
+): void {
+  const now = Date.now();
+
+  // Create buckets based on the selected interval
+  // For interval N, create buckets: <N, N-2N, 2N-3N, 3N-4N, >4N
+  const buckets = [
+    { name: `Last used < ${intervalHours}h`, max: intervalHours * 60 * 60 * 1000 },
+    { name: `Last used ${intervalHours}-${intervalHours * 2}h`, max: intervalHours * 2 * 60 * 60 * 1000 },
+    { name: `Last used ${intervalHours * 2}-${intervalHours * 3}h`, max: intervalHours * 3 * 60 * 60 * 1000 },
+    { name: `Last used ${intervalHours * 3}-${intervalHours * 4}h`, max: intervalHours * 4 * 60 * 60 * 1000 },
+    { name: `Last used > ${intervalHours * 4}h`, max: Infinity },
+  ];
+
+  tabs.forEach((tab) => {
+    // Skip important tabs - they stay in their current groups
+    if (importantTabs.includes(tab.id)) {
+      return;
+    }
+
+    const lastVisited = tab.activity?.lastVisited;
+    if (!lastVisited) {
+      // No activity data - put in oldest bucket
+      const bucketName = buckets[buckets.length - 1].name;
+      const groupKey = `auto_${bucketName.replace(/\s+/g, '_')}`;
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          id: groupKey,
+          domain: bucketName,
+          tabs: [],
+          type: 'automatic',
+          autoGroupStrategy: 'last-used',
+          createdAt: Date.now(),
+        };
+      }
+      groups[groupKey].tabs.push(tab);
+      return;
+    }
+
+    const timeSince = now - lastVisited;
+    const bucket = buckets.find((b) => timeSince <= b.max) || buckets[buckets.length - 1];
+    const groupKey = `auto_${bucket.name.replace(/\s+/g, '_')}`;
+
+    if (!groups[groupKey]) {
+      groups[groupKey] = {
+        id: groupKey,
+        domain: bucket.name,
+        tabs: [],
+        type: 'automatic',
+        autoGroupStrategy: 'last-used',
+        createdAt: Date.now(),
+      };
+    }
+    groups[groupKey].tabs.push(tab);
+  });
+}
+
+/**
+ * Create auto-delete group for stale tabs
+ */
+function createAutoDeleteGroup(
+  tabs: TabInfo[],
+  threshold: number,
+  importantTabs: number[],
+  _importantGroups: string[],
+  customGroups: CustomGroupConfig[]
+): TabGroup | null {
+  const now = Date.now();
+  const staleTabs = tabs.filter((tab) => {
+    // Skip important tabs
+    if (importantTabs.includes(tab.id)) {
+      return false;
+    }
+
+    // Skip tabs in important groups
+    const tabGroup = customGroups.find((g) => g.tabIds.includes(tab.id));
+    if (tabGroup && tabGroup.isImportant) {
+      return false;
+    }
+
+    // Check if tab is stale
+    const lastVisited = tab.activity?.lastVisited;
+    if (!lastVisited) {
+      return true; // No activity = stale
+    }
+    return now - lastVisited > threshold;
+  });
+
+  if (staleTabs.length === 0) {
+    return null;
+  }
+
+  return {
+    id: 'auto_delete_group',
+    domain: 'Tabs to Delete',
+    tabs: staleTabs,
+    type: 'automatic',
+    autoGroupStrategy: 'last-used',
+    createdAt: Date.now(),
+  };
 }

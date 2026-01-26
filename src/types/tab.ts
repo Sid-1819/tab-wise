@@ -14,10 +14,11 @@ export interface TabInfo {
   active?: boolean;
   windowId?: number;
   activity?: TabActivity; // Activity tracking data
+  isImportant?: boolean; // Whether the tab is marked as important
 }
 
 export type GroupType = 'automatic' | 'custom';
-export type AutoGroupStrategy = 'domain' | 'content-similarity' | 'time-of-day' | 'activity-pattern' | 'project-context';
+export type AutoGroupStrategy = 'domain' | 'content-similarity' | 'time-of-day' | 'activity-pattern' | 'project-context' | 'last-used';
 
 export interface TabGroup {
   id: string; // Unique identifier for the group
@@ -29,7 +30,7 @@ export interface TabGroup {
   type: GroupType; // 'automatic' or 'custom'
   customName?: string; // User-defined name for custom groups
   color?: string; // Custom color for the group
-  isFavorite?: boolean; // Whether the group is favorited
+  isImportant?: boolean; // Whether the group is marked as important
 
   // Auto-grouping metadata
   autoGroupStrategy?: AutoGroupStrategy; // Strategy used for auto-grouping
@@ -50,7 +51,7 @@ export interface CustomGroupConfig {
   name: string;
   color: string;
   tabIds: number[]; // Tab IDs that belong to this group
-  isFavorite?: boolean;
+  isImportant?: boolean;
   createdAt: number;
   lastModified: number;
 }
@@ -60,7 +61,9 @@ export interface GroupingSettings {
   autoGroupStrategies: AutoGroupStrategy[];
   defaultGroupType: GroupType;
   showNestedGroups: boolean;
-  favoritesFirst: boolean;
+  lastUsedInterval?: number; // Hours for last-used grouping (1, 2, 3, or 4)
+  autoDeleteThreshold?: number; // Milliseconds - threshold for auto-delete grouping
+  enableAutoDeleteGrouping?: boolean; // Whether to show auto-delete group
 }
 
 export const DEFAULT_GROUPING_SETTINGS: GroupingSettings = {
@@ -68,7 +71,9 @@ export const DEFAULT_GROUPING_SETTINGS: GroupingSettings = {
   autoGroupStrategies: ['domain'],
   defaultGroupType: 'automatic',
   showNestedGroups: true,
-  favoritesFirst: true,
+  lastUsedInterval: 1,
+  autoDeleteThreshold: 24 * 60 * 60 * 1000, // 24 hours
+  enableAutoDeleteGrouping: false,
 };
 
 export const GROUP_COLORS = [

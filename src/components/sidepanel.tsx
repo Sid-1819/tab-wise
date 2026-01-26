@@ -20,13 +20,18 @@ import { groupTabs, filterTabs } from '@/lib/tab-utils';
 import { useActivityMonitor } from '@/hooks/use-activity-monitor';
 import {
   getCustomGroups,
-  toggleGroupFavorite,
   addCustomGroup,
   updateCustomGroup,
   deleteCustomGroup,
   addTabToGroup,
   removeTabFromGroup,
   cleanupDeadTabs,
+  toggleTabImportant,
+  toggleGroupImportant,
+  getImportantTabs,
+  getImportantGroups,
+  getGroupingSettings,
+  saveGroupingSettings,
 } from '@/lib/group-storage';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -38,14 +43,20 @@ export function SidePanel() {
   const [autoGroupStrategy, setAutoGroupStrategy] =
     useState<AutoGroupStrategy>('domain');
   const [enableAutoGrouping, setEnableAutoGrouping] = useState(true);
+  const [lastUsedInterval, setLastUsedInterval] = useState(1);
+  const [enableAutoDelete, setEnableAutoDelete] = useState(false);
+  const [autoDeleteThreshold, setAutoDeleteThreshold] = useState(24 * 60 * 60 * 1000);
+  const [importantTabs, setImportantTabs] = useState<number[]>([]);
+  const [importantGroups, setImportantGroups] = useState<string[]>([]);
   const [showGroupDialog, setShowGroupDialog] = useState(false);
   const [editingGroup, setEditingGroup] = useState<CustomGroupConfig | undefined>();
   const [tabsForNewGroup, setTabsForNewGroup] = useState<TabInfo[]>([]);
   const { toast } = useToast();
   const { theme } = useTheme();
 
-  const loadTabs = useCallback(() => {
-    chrome.tabs.query({}, (chromeTabs) => {
+  const loadTabs = useCallback(async () => {
+    chrome.tabs.query({}, async (chromeTabs) => {
+      const important = await getImportantTabs();
       const tabsInfo: TabInfo[] = chromeTabs.map((tab) => ({
         id: tab.id!,
         title: tab.title || '',
@@ -53,6 +64,7 @@ export function SidePanel() {
         favIconUrl: tab.favIconUrl,
         active: tab.active,
         windowId: tab.windowId,
+        isImportant: important.includes(tab.id!),
       }));
       setTabs(tabsInfo);
     });
@@ -61,11 +73,29 @@ export function SidePanel() {
   const loadCustomGroups = async () => {
     const groups = await getCustomGroups();
     setCustomGroups(groups);
+    const important = await getImportantGroups();
+    setImportantGroups(important);
+  };
+
+  const loadGroupingSettings = async () => {
+    const settings = await getGroupingSettings();
+    setAutoGroupStrategy(settings.autoGroupStrategies[0] || 'domain');
+    setEnableAutoGrouping(settings.enableAutoGrouping);
+    setLastUsedInterval(settings.lastUsedInterval || 1);
+    setEnableAutoDelete(settings.enableAutoDeleteGrouping || false);
+    setAutoDeleteThreshold(settings.autoDeleteThreshold || 24 * 60 * 60 * 1000);
+  };
+
+  const loadImportantTabs = async () => {
+    const tabs = await getImportantTabs();
+    setImportantTabs(tabs);
   };
 
   useEffect(() => {
     loadTabs();
     loadCustomGroups();
+    loadGroupingSettings();
+    loadImportantTabs();
 
     // Listen for real-time tab updates from background script
     const handleMessage = (message: { action: string; payload?: unknown }) => {
@@ -88,6 +118,8 @@ export function SidePanel() {
       cleanupDeadTabs(activeTabIds).then(() => {
         loadCustomGroups();
       });
+      // Reload important tabs to sync with current tabs
+      loadImportantTabs();
     }
   }, [tabs]);
 
@@ -104,8 +136,27 @@ export function SidePanel() {
 
   const groupedTabs: GroupedTabs = useMemo(() => {
     const strategy = enableAutoGrouping ? autoGroupStrategy : 'domain';
-    return groupTabs(filteredTabs, strategy, customGroups);
-  }, [filteredTabs, autoGroupStrategy, enableAutoGrouping, customGroups]);
+    return groupTabs(
+      filteredTabs,
+      strategy,
+      customGroups,
+      importantTabs,
+      importantGroups,
+      lastUsedInterval,
+      enableAutoDelete,
+      autoDeleteThreshold
+    );
+  }, [
+    filteredTabs,
+    autoGroupStrategy,
+    enableAutoGrouping,
+    customGroups,
+    importantTabs,
+    importantGroups,
+    lastUsedInterval,
+    enableAutoDelete,
+    autoDeleteThreshold,
+  ]);
 
   const handleCloseTab = (tabId: number) => {
     chrome.tabs.remove(tabId, () => {
@@ -197,17 +248,45 @@ export function SidePanel() {
     setEditingGroup(undefined);
   };
 
-  const handleToggleFavorite = async (groupId: string) => {
+  const handleToggleTabImportant = async (tabId: number) => {
+    await toggleTabImportant(tabId);
+    await loadImportantTabs();
+    const isImportant = importantTabs.includes(tabId);
+    toast({
+      title: isImportant ? 'Removed Important Mark' : 'Marked as Important',
+      description: `Tab ${isImportant ? 'removed from' : 'marked as'} important.`,
+    });
+  };
+
+  const handleToggleGroupImportant = async (groupId: string) => {
     const group = customGroups.find((g) => g.id === groupId);
-    const wasFavorite = group?.isFavorite;
-    await toggleGroupFavorite(groupId);
+    const wasImportant = group?.isImportant;
+    await toggleGroupImportant(groupId);
     await loadCustomGroups();
     if (group) {
       toast({
-        title: wasFavorite ? 'Removed from Favorites' : 'Added to Favorites',
-        description: `"${group.name}" ${wasFavorite ? 'removed from' : 'added to'} favorites.`,
+        title: wasImportant ? 'Removed Important Mark' : 'Marked as Important',
+        description: `"${group.name}" ${wasImportant ? 'removed from' : 'marked as'} important.`,
       });
     }
+  };
+
+  const handleLastUsedIntervalChange = async (interval: number) => {
+    setLastUsedInterval(interval);
+    const settings = await getGroupingSettings();
+    await saveGroupingSettings({ ...settings, lastUsedInterval: interval });
+  };
+
+  const handleAutoDeleteToggle = async (enabled: boolean) => {
+    setEnableAutoDelete(enabled);
+    const settings = await getGroupingSettings();
+    await saveGroupingSettings({ ...settings, enableAutoDeleteGrouping: enabled });
+  };
+
+  const handleAutoDeleteThresholdChange = async (threshold: number) => {
+    setAutoDeleteThreshold(threshold);
+    const settings = await getGroupingSettings();
+    await saveGroupingSettings({ ...settings, autoDeleteThreshold: threshold });
   };
 
   const handleAddTabToGroup = async (tabId: number, groupId: string) => {
@@ -295,6 +374,12 @@ export function SidePanel() {
             onStrategyChange={setAutoGroupStrategy}
             enableAutoGrouping={enableAutoGrouping}
             onToggleAutoGrouping={setEnableAutoGrouping}
+            lastUsedInterval={lastUsedInterval}
+            onLastUsedIntervalChange={handleLastUsedIntervalChange}
+            enableAutoDelete={enableAutoDelete}
+            onToggleAutoDelete={handleAutoDeleteToggle}
+            autoDeleteThreshold={autoDeleteThreshold}
+            onAutoDeleteThresholdChange={handleAutoDeleteThresholdChange}
           />
         </div>
 
@@ -309,7 +394,8 @@ export function SidePanel() {
                 onTabClick={handleTabClick}
                 onDuplicateTab={handleDuplicateTab}
                 showActivity={showActivity}
-                onToggleFavorite={handleToggleFavorite}
+                onToggleImportant={handleToggleGroupImportant}
+                onToggleTabImportant={handleToggleTabImportant}
                 onEditGroup={handleEditGroup}
                 onDeleteGroup={handleDeleteGroup}
                 onConvertToCustom={handleConvertToCustom}

@@ -7,6 +7,8 @@ import {
 const STORAGE_KEYS = {
   CUSTOM_GROUPS: 'customGroups',
   GROUPING_SETTINGS: 'groupingSettings',
+  IMPORTANT_TABS: 'importantTabs',
+  IMPORTANT_GROUPS: 'importantGroups',
 } as const;
 
 export async function getCustomGroups(): Promise<CustomGroupConfig[]> {
@@ -53,14 +55,52 @@ export async function deleteCustomGroup(groupId: string): Promise<void> {
   await saveCustomGroups(filtered);
 }
 
-export async function toggleGroupFavorite(groupId: string): Promise<void> {
+/**
+ * Toggle important status for a tab
+ */
+export async function toggleTabImportant(tabId: number): Promise<void> {
+  const importantTabs = await getImportantTabs();
+  const index = importantTabs.indexOf(tabId);
+  
+  if (index >= 0) {
+    importantTabs.splice(index, 1);
+  } else {
+    importantTabs.push(tabId);
+  }
+  
+  await chrome.storage.local.set({ [STORAGE_KEYS.IMPORTANT_TABS]: importantTabs });
+}
+
+/**
+ * Toggle important status for a group
+ */
+export async function toggleGroupImportant(groupId: string): Promise<void> {
   const groups = await getCustomGroups();
   const group = groups.find((g) => g.id === groupId);
   if (group) {
     await updateCustomGroup(groupId, {
-      isFavorite: !group.isFavorite,
+      isImportant: !group.isImportant,
     });
   }
+}
+
+/**
+ * Get list of important tab IDs
+ */
+export async function getImportantTabs(): Promise<number[]> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEYS.IMPORTANT_TABS], (result) => {
+      resolve(result[STORAGE_KEYS.IMPORTANT_TABS] || []);
+    });
+  });
+}
+
+/**
+ * Get list of important group IDs
+ */
+export async function getImportantGroups(): Promise<string[]> {
+  const groups = await getCustomGroups();
+  return groups.filter((g) => g.isImportant).map((g) => g.id);
 }
 
 export async function getGroupingSettings(): Promise<GroupingSettings> {
