@@ -10,7 +10,7 @@ Tabwise is a productivity-focused Chrome extension that helps you manage, search
 - **Smart Tab Search** – Quickly find tabs using keywords  
 - **Group Tabs Logically** – Organize tabs based on domain or title  
 - **Minimal & Intelligent UI** – Built to stay out of your way and boost your workflow  
-- **Session Saving (coming soon)** – Save your tab sessions and restore them later  
+- **Sessions** – Save the current window (URLs, pins, optional tab groups) and restore here or in a new window  
 - **Dark-Themed Interface** – Eye-friendly, sleek visual design  
 
 ---

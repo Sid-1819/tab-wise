@@ -9,6 +9,7 @@ import { GroupToolbar } from '@/components/group-toolbar';
 import { GroupDialog } from '@/components/group-dialog';
 import { useTheme } from '@/components/theme-provider';
 import { RecentlyClosed } from '@/components/recently-closed';
+import { SavedSessions } from '@/components/saved-sessions';
 import { DuplicateBanner } from '@/components/duplicate-banner';
 import {
   findDuplicateClusters,
@@ -463,7 +464,10 @@ export function SidePanel() {
             totalGroups={totalGroups}
           />
 
-          <RecentlyClosed onRestored={loadTabs} />
+          <div className="flex items-center gap-1 mb-2 flex-wrap">
+            <SavedSessions onRestored={loadTabs} />
+            <RecentlyClosed onRestored={loadTabs} />
+          </div>
 
           {showDuplicateBanner && (
             <DuplicateBanner

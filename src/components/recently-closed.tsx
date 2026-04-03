@@ -7,9 +7,13 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 
+const MAX_RECENT_TABS = 10;
+/** Fetch extra sessions so we still get up to MAX_RECENT_TABS after filtering to tab-only. */
+const SESSIONS_FETCH_CAP = 25;
+
 function loadRecentTabSessions(): Promise<chrome.sessions.Session[]> {
   return new Promise((resolve, reject) => {
-    chrome.sessions.getRecentlyClosed({ maxResults: 15 }, (sessions) => {
+    chrome.sessions.getRecentlyClosed({ maxResults: SESSIONS_FETCH_CAP }, (sessions) => {
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
         return;
@@ -39,7 +43,9 @@ export function RecentlyClosed({ onRestored }: { onRestored?: () => void }) {
     return () => chrome.tabs.onRemoved.removeListener(onRemoved);
   }, [refresh]);
 
-  const tabSessions = sessions.filter((s) => s.tab != null);
+  const tabSessions = sessions
+    .filter((s) => s.tab != null)
+    .slice(0, MAX_RECENT_TABS);
 
   const restore = (sessionId?: string) => {
     const done = () => {
@@ -61,7 +67,7 @@ export function RecentlyClosed({ onRestored }: { onRestored?: () => void }) {
   };
 
   return (
-    <div className="flex items-center gap-2 mb-2">
+    <div className="flex items-center gap-2">
       <Button variant="outline" size="sm" className="h-8" onClick={undoLast}>
         <RotateCcw className="h-3.5 w-3.5 mr-1" />
         Undo close
