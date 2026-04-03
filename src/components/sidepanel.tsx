@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SearchBar } from '@/components/search-bar';
 import { TabGroupCard } from '@/components/tab-group-card';
@@ -8,6 +8,12 @@ import { Toaster } from '@/components/ui/toaster';
 import { GroupToolbar } from '@/components/group-toolbar';
 import { GroupDialog } from '@/components/group-dialog';
 import { useTheme } from '@/components/theme-provider';
+import { RecentlyClosed } from '@/components/recently-closed';
+import { DuplicateBanner } from '@/components/duplicate-banner';
+import {
+  findDuplicateClusters,
+  pickKeeperTabId,
+} from '@/lib/url-normalize';
 import {
   TabInfo,
   GroupedTabs,
@@ -36,6 +42,9 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 
 export function SidePanel() {
+  const prevDuplicateSigRef = useRef<string>('');
+  const [duplicateDismissSig, setDuplicateDismissSig] = useState<string | null>(null);
+
   const [tabs, setTabs] = useState<TabInfo[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showActivity, setShowActivity] = useState(true);
@@ -64,6 +73,8 @@ export function SidePanel() {
         favIconUrl: tab.favIconUrl,
         active: tab.active,
         windowId: tab.windowId,
+        index: tab.index,
+        pinned: tab.pinned,
         isImportant: important.includes(tab.id!),
       }));
       setTabs(tabsInfo);
@@ -97,7 +108,6 @@ export function SidePanel() {
     loadGroupingSettings();
     loadImportantTabs();
 
-    // Listen for real-time tab updates from background script
     const handleMessage = (message: { action: string; payload?: unknown }) => {
       if (message.action === 'tabsUpdated') {
         loadTabs();
@@ -181,6 +191,23 @@ export function SidePanel() {
     });
   };
 
+  const handleTogglePin = (tabId: number) => {
+    chrome.tabs.get(tabId, (tab) => {
+      if (chrome.runtime.lastError || tab.id == null) return;
+      chrome.tabs.update(tabId, { pinned: !tab.pinned }, () => {
+        if (chrome.runtime.lastError) {
+          toast({
+            title: 'Could not pin tab',
+            description: chrome.runtime.lastError.message,
+            variant: 'destructive',
+          });
+          return;
+        }
+        loadTabs();
+      });
+    });
+  };
+
   const handleDuplicateTab = (tabId: number) => {
     chrome.tabs.duplicate(tabId, () => {
       if (chrome.runtime.lastError) {
@@ -249,12 +276,16 @@ export function SidePanel() {
   };
 
   const handleToggleTabImportant = async (tabId: number) => {
+    const before = await getImportantTabs();
+    const wasImportant = before.includes(tabId);
     await toggleTabImportant(tabId);
     await loadImportantTabs();
-    const isImportant = importantTabs.includes(tabId);
+    await loadTabs();
     toast({
-      title: isImportant ? 'Removed Important Mark' : 'Marked as Important',
-      description: `Tab ${isImportant ? 'removed from' : 'marked as'} important.`,
+      title: wasImportant ? 'Removed Important Mark' : 'Marked as Important',
+      description: wasImportant
+        ? 'Tab removed from important.'
+        : 'Tab marked as important.',
     });
   };
 
@@ -325,15 +356,83 @@ export function SidePanel() {
 
   const totalGroups = Object.keys(groupedTabs).length;
 
-  // Get all groups as a flat list
   const allGroups = useMemo(() => {
     return Object.values(groupedTabs);
   }, [groupedTabs]);
 
+  const duplicateClusters = useMemo(
+    () => findDuplicateClusters(tabs),
+    [tabs]
+  );
+
+  const duplicateSignature = useMemo(
+    () =>
+      duplicateClusters
+        .map((c) => [...c.tabIds].sort((a, b) => a - b).join('-'))
+        .sort()
+        .join('|'),
+    [duplicateClusters]
+  );
+
+  useEffect(() => {
+    if (
+      prevDuplicateSigRef.current !== '' &&
+      prevDuplicateSigRef.current !== duplicateSignature
+    ) {
+      setDuplicateDismissSig(null);
+    }
+    prevDuplicateSigRef.current = duplicateSignature;
+  }, [duplicateSignature]);
+
+  const extraDuplicateTabCount = useMemo(
+    () =>
+      duplicateClusters.reduce((acc, c) => acc + Math.max(0, c.tabIds.length - 1), 0),
+    [duplicateClusters]
+  );
+
+  const showDuplicateBanner =
+    duplicateClusters.length > 0 && duplicateDismissSig !== duplicateSignature;
+
+  const handleCloseDuplicates = useCallback(() => {
+    const toClose: number[] = [];
+    for (const cluster of duplicateClusters) {
+      const keeper = pickKeeperTabId(cluster.tabIds, tabs);
+      for (const id of cluster.tabIds) {
+        if (id === keeper) continue;
+        const tab = tabs.find((t) => t.id === id);
+        if (tab?.pinned) continue;
+        toClose.push(id);
+      }
+    }
+    if (toClose.length === 0) {
+      toast({
+        title: 'Nothing to close',
+        description: 'Duplicates are pinned or already unique.',
+      });
+      return;
+    }
+    chrome.tabs.remove(toClose, () => {
+      if (chrome.runtime.lastError) {
+        toast({
+          title: 'Error',
+          description: chrome.runtime.lastError.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+      loadTabs();
+      updateActivity();
+      toast({
+        title: 'Duplicates closed',
+        description: `Closed ${toClose.length} extra tab(s).`,
+      });
+    });
+  }, [duplicateClusters, tabs, toast, loadTabs, updateActivity]);
+
   const isDarkMode = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   return (
-    <div className="w-full h-screen flex flex-col overflow-hidden p-3 bg-background">
+    <div className="w-full min-w-[500px] h-screen flex flex-col overflow-hidden p-3 bg-background box-border">
       <header className="flex items-center justify-between mb-3 pb-2 border-b shrink-0">
         <div className="flex items-center gap-2">
           <img
@@ -363,6 +462,17 @@ export function SidePanel() {
             totalTabs={filteredTabs.length}
             totalGroups={totalGroups}
           />
+
+          <RecentlyClosed onRestored={loadTabs} />
+
+          {showDuplicateBanner && (
+            <DuplicateBanner
+              clusters={duplicateClusters}
+              extraTabCount={extraDuplicateTabCount}
+              onCloseDuplicates={handleCloseDuplicates}
+              onDismiss={() => setDuplicateDismissSig(duplicateSignature)}
+            />
+          )}
 
           {showActivity && (
             <ActivityStats tabs={tabsWithActivity} totalGroups={totalGroups} />
@@ -402,6 +512,7 @@ export function SidePanel() {
                 onAddTabToGroup={handleAddTabToGroup}
                 onRemoveTabFromGroup={handleRemoveTabFromGroup}
                 customGroups={customGroups}
+                onTogglePin={handleTogglePin}
               />
             ))}
           </div>

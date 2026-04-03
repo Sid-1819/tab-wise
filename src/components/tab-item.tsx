@@ -1,4 +1,4 @@
-import { X, MoreVertical, FolderPlus, FolderMinus, Copy, Shield } from 'lucide-react';
+import { X, MoreVertical, FolderPlus, FolderMinus, Copy, Shield, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ActivityBadge } from '@/components/activity-badge';
 import {
@@ -22,6 +22,7 @@ interface TabItemProps {
   onRemoveFromGroup?: (tabId: number, groupId: string) => void;
   onDuplicate?: (tabId: number) => void;
   onToggleImportant?: (tabId: number) => void;
+  onTogglePin?: (tabId: number) => void;
 }
 
 const DEFAULT_FAVICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
@@ -37,6 +38,7 @@ export function TabItem({
   onRemoveFromGroup,
   onDuplicate,
   onToggleImportant,
+  onTogglePin,
 }: TabItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -105,8 +107,16 @@ export function TabItem({
         <Shield className="h-4 w-4 fill-amber-500 text-amber-500 shrink-0" />
       )}
 
+      {tab.pinned && (
+        <Pin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+      )}
+
       {/* Group management menu */}
-      {(customGroups.length > 0 || isInCustomGroup || onDuplicate || onToggleImportant) && (
+      {(customGroups.length > 0 ||
+        isInCustomGroup ||
+        onDuplicate ||
+        onToggleImportant ||
+        onTogglePin) && (
         <Popover open={menuOpen} onOpenChange={setMenuOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -140,10 +150,24 @@ export function TabItem({
               </button>
             )}
 
+            {onTogglePin && (
+              <button
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTogglePin(tab.id);
+                  setMenuOpen(false);
+                }}
+              >
+                <Pin className="h-3 w-3" />
+                <span>{tab.pinned ? 'Unpin tab' : 'Pin tab'}</span>
+              </button>
+            )}
+
             {/* Duplicate tab option */}
             {onDuplicate && (
               <>
-                {onToggleImportant && <div className="border-t my-1" />}
+                {(onToggleImportant || onTogglePin) && <div className="border-t my-1" />}
                 <button
                   className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left"
                   onClick={(e) => {
@@ -202,7 +226,11 @@ export function TabItem({
               </>
             )}
 
-            {availableGroups.length === 0 && !isInCustomGroup && !onDuplicate && !onToggleImportant && (
+            {availableGroups.length === 0 &&
+              !isInCustomGroup &&
+              !onDuplicate &&
+              !onToggleImportant &&
+              !onTogglePin && (
               <div className="text-xs text-muted-foreground px-2 py-2">
                 No groups available. Create a group first.
               </div>

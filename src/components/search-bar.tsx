@@ -19,6 +19,7 @@ export function SearchBar({ value, onChange, totalTabs, totalGroups }: SearchBar
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="pl-10"
+          aria-label="Search tabs"
         />
       </div>
       <div className="text-xs text-muted-foreground">

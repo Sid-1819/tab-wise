@@ -20,6 +20,7 @@ interface TabGroupCardProps {
   onAddTabToGroup?: (tabId: number, groupId: string) => void;
   onRemoveTabFromGroup?: (tabId: number, groupId: string) => void;
   onToggleTabImportant?: (tabId: number) => void;
+  onTogglePin?: (tabId: number) => void;
   customGroups?: CustomGroupConfig[];
 }
 
@@ -39,6 +40,7 @@ export function TabGroupCard({
   onAddTabToGroup,
   onRemoveTabFromGroup,
   onToggleTabImportant,
+  onTogglePin,
   customGroups = [],
 }: TabGroupCardProps) {
   const handleCloseAll = () => {
@@ -184,6 +186,7 @@ export function TabGroupCard({
               onAddToGroup={onAddTabToGroup}
               onRemoveFromGroup={onRemoveTabFromGroup}
               onToggleImportant={onToggleTabImportant}
+              onTogglePin={onTogglePin}
             />
           ))
         )}

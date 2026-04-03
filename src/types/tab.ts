@@ -13,6 +13,8 @@ export interface TabInfo {
   favIconUrl?: string;
   active?: boolean;
   windowId?: number;
+  index?: number;
+  pinned?: boolean;
   activity?: TabActivity; // Activity tracking data
   isImportant?: boolean; // Whether the tab is marked as important
 }

@@ -59,7 +59,7 @@ export async function deleteCustomGroup(groupId: string): Promise<void> {
  * Toggle important status for a tab
  */
 export async function toggleTabImportant(tabId: number): Promise<void> {
-  const importantTabs = await getImportantTabs();
+  const importantTabs = [...(await getImportantTabs())];
   const index = importantTabs.indexOf(tabId);
   
   if (index >= 0) {
@@ -90,7 +90,11 @@ export async function toggleGroupImportant(groupId: string): Promise<void> {
 export async function getImportantTabs(): Promise<number[]> {
   return new Promise((resolve) => {
     chrome.storage.local.get([STORAGE_KEYS.IMPORTANT_TABS], (result) => {
-      resolve(result[STORAGE_KEYS.IMPORTANT_TABS] || []);
+      const raw = result[STORAGE_KEYS.IMPORTANT_TABS] || [];
+      const ids = (Array.isArray(raw) ? raw : [])
+        .map((id) => Number(id))
+        .filter((id) => Number.isFinite(id));
+      resolve(ids);
     });
   });
 }
