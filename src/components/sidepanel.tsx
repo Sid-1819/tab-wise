@@ -11,6 +11,7 @@ import { useTheme } from '@/components/theme-provider';
 import { RecentlyClosed } from '@/components/recently-closed';
 import { SavedSessions } from '@/components/saved-sessions';
 import { DuplicateBanner } from '@/components/duplicate-banner';
+import { SystemMemoryBar } from '@/components/system-memory-bar';
 import {
   findDuplicateClusters,
   pickKeeperTabId,
@@ -477,6 +478,8 @@ export function SidePanel() {
               onDismiss={() => setDuplicateDismissSig(duplicateSignature)}
             />
           )}
+
+          <SystemMemoryBar />
 
           {showActivity && (
             <ActivityStats tabs={tabsWithActivity} totalGroups={totalGroups} />

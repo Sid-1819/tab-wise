@@ -4,6 +4,7 @@
   "version": "2.3.0",
   "description": "Organize and manage your Chrome tabs efficiently with a modern React interface",
   "permissions": ["tabs", "tabGroups", "storage", "sidePanel", "contextMenus", "sessions"],
+  "optional_permissions": ["system.memory"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_title": "Open Tab Wise"
