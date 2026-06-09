@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useTheme } from 'next-themes';
 import { MessageSquare } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SearchBar } from '@/components/search-bar';
@@ -47,16 +48,23 @@ import { useToast } from '@/components/ui/use-toast';
 const FEEDBACK_URL = 'https://github.com/Sid-1819/tab-wise/issues/new';
 
 function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCount: number }) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  const logoSrc =
+    mounted && resolvedTheme === 'dark'
+      ? '/icons/tw_dark_icon.png'
+      : '/icons/tw_light_icon.png';
+
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <span
-        aria-hidden
-        className="relative flex size-5 shrink-0 items-center justify-center rounded-md bg-foreground text-background"
-      >
-        <span className="absolute inset-0.5 rounded-sm border border-background/40" />
-        <span className="absolute left-0.5 top-0.5 h-0.5 w-2 rounded-sm bg-background/80" />
-      </span>
-      <span className="text-sm font-semibold tracking-tight text-foreground shrink-0">Tab Wise</span>
+      <img
+        src={logoSrc}
+        alt="Tab Wise"
+        className="h-5 w-auto shrink-0 object-contain"
+      />
       <span className="text-[11px] text-muted-foreground truncate tabular-nums">
         {tabCount} tabs · {groupCount} groups
       </span>

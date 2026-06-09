@@ -125,7 +125,8 @@ export function TabGroupCard({
             />
           )}
           <span className="truncate text-sm font-semibold tracking-tight">
-            {displayName} ({group.tabs.length})
+            {displayName}
+            {group.tabs.length > 1 ? ` - ${group.tabs.length}` : ''}
           </span>
           {group.isImportant && (
             <Shield className="h-3.5 w-3.5 shrink-0 fill-amber-500 text-amber-500" />
