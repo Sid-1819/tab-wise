@@ -14,9 +14,9 @@ export function SystemMemoryBar() {
 
   if (!permissionGranted) {
     return (
-      <div className="flex items-center justify-between gap-2 mb-2 p-2 rounded-md bg-muted/50">
+      <div className="flex items-center justify-between gap-2 mb-1.5 p-1.5 rounded-md bg-muted/50">
         <span className="text-xs text-muted-foreground">System RAM</span>
-        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={requestPermission}>
+        <Button type="button" variant="outline" size="sm" className="h-6 text-[11px] px-2" onClick={requestPermission}>
           Show system memory
         </Button>
       </div>
@@ -32,7 +32,7 @@ export function SystemMemoryBar() {
       : 0;
 
   return (
-    <div className="mb-2 p-2 rounded-md bg-muted/50">
+    <div className="mb-1.5 p-1.5 rounded-md bg-muted/50">
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xs font-medium text-foreground truncate">System RAM</span>

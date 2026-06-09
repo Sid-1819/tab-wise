@@ -23,6 +23,8 @@ interface TabItemProps {
   onDuplicate?: (tabId: number) => void;
   onToggleImportant?: (tabId: number) => void;
   onTogglePin?: (tabId: number) => void;
+  /** Tab is rendered inside a multi-tab group card (indented nest styling). */
+  nestedInGroup?: boolean;
 }
 
 const DEFAULT_FAVICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
@@ -39,6 +41,7 @@ export function TabItem({
   onDuplicate,
   onToggleImportant,
   onTogglePin,
+  nestedInGroup = false,
 }: TabItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -73,9 +76,11 @@ export function TabItem({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer group",
+        "flex items-center gap-2 rounded-md transition-colors cursor-pointer group",
+        nestedInGroup ? "py-1.5 pl-2 pr-1" : "py-1.5 px-2",
         "hover:bg-accent",
-        isActive && "bg-primary/10 border-l-2 border-primary"
+        isActive && !nestedInGroup && "bg-primary/10 border-l-2 border-primary",
+        isActive && nestedInGroup && "bg-primary/10"
       )}
       onClick={() => onClick(tab.id)}
     >
@@ -88,8 +93,8 @@ export function TabItem({
         }}
       />
       <span className={cn(
-        "flex-1 text-sm truncate",
-        isActive && "font-semibold text-primary"
+        "flex-1 truncate text-xs",
+        isActive ? "font-medium text-primary" : "font-normal text-foreground/90"
       )}>
         {truncatedTitle}
       </span>

@@ -6,7 +6,7 @@ import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider defaultTheme="system" storageKey="tab-wise-theme">
+    <ThemeProvider>
       <SidePanel />
     </ThemeProvider>
   </React.StrictMode>

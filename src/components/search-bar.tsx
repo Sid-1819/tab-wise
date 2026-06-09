@@ -4,27 +4,20 @@ import { Input } from '@/components/ui/input';
 interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
-  totalTabs: number;
-  totalGroups: number;
 }
 
-export function SearchBar({ value, onChange, totalTabs, totalGroups }: SearchBarProps) {
+export function SearchBar({ value, onChange }: SearchBarProps) {
   return (
-    <div className="space-y-2 mb-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search tabs..."
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="pl-10"
-          aria-label="Search tabs"
-        />
-      </div>
-      <div className="text-xs text-muted-foreground">
-        {totalTabs} tabs in {totalGroups} groups
-      </div>
+    <div className="relative mb-2">
+      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        type="text"
+        placeholder="Search tabs..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 pl-8 text-sm"
+        aria-label="Search tabs"
+      />
     </div>
   );
 }

@@ -1,10 +1,12 @@
-import { X, Shield, Edit2, Bookmark, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { X, Shield, Edit2, Bookmark, Trash2, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TabGroup, CustomGroupConfig } from '@/types/tab';
 import { TabItem } from '@/components/tab-item';
-import { cn } from '@/lib/utils'; // Used for Star className
+import { getGroupBorderColor } from '@/lib/group-colors';
+import { cn } from '@/lib/utils';
 
 interface TabGroupCardProps {
   group: TabGroup;
@@ -26,6 +28,9 @@ interface TabGroupCardProps {
 
 const DEFAULT_FAVICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
 
+const groupActionBtn =
+  'h-6 w-6 p-0 opacity-0 transition-opacity group-hover/card:opacity-100 focus-visible:opacity-100';
+
 export function TabGroupCard({
   group,
   onCloseTab,
@@ -43,36 +48,71 @@ export function TabGroupCard({
   onTogglePin,
   customGroups = [],
 }: TabGroupCardProps) {
+  const isCustomGroup = group.type === 'custom';
+  const isSingleAutoGroup = group.tabs.length === 1 && !isCustomGroup;
+  const [collapsed, setCollapsed] = useState(false);
+
   const handleCloseAll = () => {
     const tabIds = group.tabs.map((tab) => tab.id);
     onCloseAll(tabIds);
   };
 
   const displayName = group.customName || group.domain;
-  const isCustomGroup = group.type === 'custom';
+  const borderColor = getGroupBorderColor(group.id, group.color);
+  const groupBorderStyle = {
+    borderLeftColor: borderColor,
+    borderLeftWidth: '3px',
+  } as const;
 
-  // Calculate activity stats for the group
   const activeTabsInGroup = group.tabs.filter((tab) => {
     if (!tab.activity) return false;
     const now = Date.now();
-    return now - tab.activity.lastVisited < 30 * 60 * 1000; // Active in last 30 mins
+    return now - tab.activity.lastVisited < 30 * 60 * 1000;
   }).length;
+
+  const tabItemProps = (tab: (typeof group.tabs)[0]) => ({
+    tab,
+    onClose: onCloseTab,
+    onClick: onTabClick,
+    onDuplicate: onDuplicateTab,
+    showActivity,
+    customGroups,
+    currentGroupId: isCustomGroup ? group.id : undefined,
+    onAddToGroup: onAddTabToGroup,
+    onRemoveFromGroup: onRemoveTabFromGroup,
+    onToggleImportant: onToggleTabImportant,
+    onTogglePin,
+  });
+
+  if (isSingleAutoGroup && group.tabs.length === 1) {
+    return <TabItem {...tabItemProps(group.tabs[0])} />;
+  }
 
   return (
     <Card
-      style={
-        group.color && isCustomGroup
-          ? { borderTopColor: group.color, borderTopWidth: '3px' }
-          : undefined
-      }
+      className="group/card rounded-lg border border-l-[3px] border-hairline/70 shadow-none"
+      style={groupBorderStyle}
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <div className="flex items-center gap-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 py-2">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+          onClick={() => group.tabs.length > 1 && setCollapsed((c) => !c)}
+          aria-expanded={!collapsed}
+        >
+          {group.tabs.length > 1 && (
+            <ChevronDown
+              className={cn(
+                'h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform',
+                collapsed && '-rotate-90'
+              )}
+            />
+          )}
           {!isCustomGroup && (
             <img
               src={group.favicon || DEFAULT_FAVICON}
               alt=""
-              className="w-4 h-4 rounded"
+              className="h-3.5 w-3.5 shrink-0 rounded"
               onError={(e) => {
                 e.currentTarget.src = DEFAULT_FAVICON;
               }}
@@ -80,55 +120,50 @@ export function TabGroupCard({
           )}
           {isCustomGroup && group.color && (
             <div
-              className="w-4 h-4 rounded-full"
+              className="h-3.5 w-3.5 shrink-0 rounded-full"
               style={{ backgroundColor: group.color }}
             />
           )}
-          <span className="font-medium">
+          <span className="truncate text-sm font-semibold tracking-tight">
             {displayName} ({group.tabs.length})
           </span>
           {group.isImportant && (
-            <Shield className="h-4 w-4 fill-amber-500 text-amber-500" />
+            <Shield className="h-3.5 w-3.5 shrink-0 fill-amber-500 text-amber-500" />
           )}
           {showActivity && activeTabsInGroup > 0 && (
-            <Badge variant="outline" className="text-xs text-green-600">
+            <Badge variant="outline" className="shrink-0 text-[10px] text-green-600 px-1 py-0">
               {activeTabsInGroup} active
             </Badge>
           )}
           {isCustomGroup && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="shrink-0 text-[10px] px-1 py-0">
               Custom
             </Badge>
           )}
-          {group.autoGroupStrategy && group.autoGroupStrategy !== 'domain' && (
-            <Badge variant="outline" className="text-xs">
-              {group.autoGroupStrategy.replace('-', ' ')}
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
+        </button>
+        <div className="flex shrink-0 items-center gap-0.5">
           {!isCustomGroup && onConvertToCustom && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className={groupActionBtn}
               onClick={() => onConvertToCustom(group)}
               title="Save as custom group"
             >
-              <Bookmark className="h-4 w-4" />
+              <Bookmark className="h-3.5 w-3.5" />
             </Button>
           )}
           {isCustomGroup && onToggleImportant && (
             <Button
               variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
+              size="icon"
+              className={groupActionBtn}
               onClick={() => onToggleImportant(group.id)}
               title={group.isImportant ? 'Remove important mark' : 'Mark as important'}
             >
               <Shield
                 className={cn(
-                  'h-4 w-4',
+                  'h-3.5 w-3.5',
                   group.isImportant && 'fill-amber-500 text-amber-500'
                 )}
               />
@@ -137,60 +172,49 @@ export function TabGroupCard({
           {isCustomGroup && onEditGroup && (
             <Button
               variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
+              size="icon"
+              className={groupActionBtn}
               onClick={() => onEditGroup(group.id)}
               title="Edit group"
             >
-              <Edit2 className="h-4 w-4" />
+              <Edit2 className="h-3.5 w-3.5" />
             </Button>
           )}
           {isCustomGroup && onDeleteGroup && (
             <Button
               variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              size="icon"
+              className={cn(groupActionBtn, 'text-destructive hover:text-destructive')}
               onClick={() => onDeleteGroup(group.id)}
               title="Delete group"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           )}
           <Button
-            variant="destructive"
+            variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className={cn(groupActionBtn, 'text-destructive hover:bg-destructive/10 hover:text-destructive')}
             onClick={handleCloseAll}
             title="Close all tabs"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 space-y-1">
-        {group.tabs.length === 0 ? (
-          <div className="text-sm text-muted-foreground text-center py-4">
-            No tabs in this group
-          </div>
-        ) : (
-          group.tabs.map((tab) => (
-            <TabItem
-              key={tab.id}
-              tab={tab}
-              onClose={onCloseTab}
-              onClick={onTabClick}
-              onDuplicate={onDuplicateTab}
-              showActivity={showActivity}
-              customGroups={customGroups}
-              currentGroupId={isCustomGroup ? group.id : undefined}
-              onAddToGroup={onAddTabToGroup}
-              onRemoveFromGroup={onRemoveTabFromGroup}
-              onToggleImportant={onToggleTabImportant}
-              onTogglePin={onTogglePin}
-            />
-          ))
-        )}
-      </CardContent>
+      {!collapsed && (
+        <CardContent className="space-y-1 px-3 pb-3 pt-0 pr-5">
+          {group.tabs.length === 0 ? (
+            <div className="py-4 text-center text-sm text-muted-foreground">
+              No tabs in this group
+            </div>
+          ) : (
+            group.tabs.map((tab) => (
+              <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
+            ))
+          )}
+        </CardContent>
+      )}
     </Card>
   );
 }

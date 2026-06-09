@@ -1,73 +1,74 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import * as React from 'react';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
-type Theme = 'dark' | 'light' | 'system';
-
-type ThemeProviderProps = {
-  children: React.ReactNode;
-  defaultTheme?: Theme;
-  storageKey?: string;
+export type ThemePreset = {
+  id: string;
+  label: string;
+  className: string;
 };
 
-type ThemeProviderState = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
+export const THEME_PRESETS: ThemePreset[] = [
+  { id: 'default', label: 'Default', className: '' },
+  { id: 'sage', label: 'Sage', className: 'theme-sage' },
+];
+
+const PRESET_STORAGE_KEY = 'tab-wise-theme-preset';
+
+type PresetContextValue = {
+  preset: string;
+  setPreset: (id: string) => void;
 };
 
-const initialState: ThemeProviderState = {
-  theme: 'system',
-  setTheme: () => null,
-};
+const PresetContext = React.createContext<PresetContextValue | null>(null);
 
-const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
+function PresetProvider({ children }: { children: React.ReactNode }) {
+  const [preset, setPresetState] = React.useState<string>('default');
 
-export function ThemeProvider({
-  children,
-  defaultTheme = 'system',
-  storageKey = 'vite-ui-theme',
-  ...props
-}: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
-
-  useEffect(() => {
-    const root = window.document.documentElement;
-
-    root.classList.remove('light', 'dark');
-
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
-        .matches
-        ? 'dark'
-        : 'light';
-
-      root.classList.add(systemTheme);
-      return;
+  React.useEffect(() => {
+    const stored =
+      typeof window !== 'undefined' ? window.localStorage.getItem(PRESET_STORAGE_KEY) : null;
+    if (stored && THEME_PRESETS.some((p) => p.id === stored)) {
+      setPresetState(stored);
     }
+  }, []);
 
-    root.classList.add(theme);
-  }, [theme]);
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    THEME_PRESETS.forEach((p) => {
+      if (p.className) root.classList.remove(p.className);
+    });
+    const active = THEME_PRESETS.find((p) => p.id === preset);
+    if (active?.className) root.classList.add(active.className);
+  }, [preset]);
 
-  const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
-    },
-  };
+  const setPreset = React.useCallback((id: string) => {
+    setPresetState(id);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(PRESET_STORAGE_KEY, id);
+    }
+  }, []);
 
   return (
-    <ThemeProviderContext.Provider {...props} value={value}>
-      {children}
-    </ThemeProviderContext.Provider>
+    <PresetContext.Provider value={{ preset, setPreset }}>{children}</PresetContext.Provider>
   );
 }
 
-export const useTheme = () => {
-  const context = useContext(ThemeProviderContext);
+export function useThemePreset() {
+  const ctx = React.useContext(PresetContext);
+  if (!ctx) throw new Error('useThemePreset must be used inside ThemeProvider');
+  return ctx;
+}
 
-  if (context === undefined)
-    throw new Error('useTheme must be used within a ThemeProvider');
-
-  return context;
-};
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <NextThemesProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      storageKey="tab-wise-theme"
+    >
+      <PresetProvider>{children}</PresetProvider>
+    </NextThemesProvider>
+  );
+}

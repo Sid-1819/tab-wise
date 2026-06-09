@@ -2,7 +2,9 @@
   "name": "tab-wise",
   "version": "2.0.0",
   "type": "module",
+  "packageManager": "pnpm@11.5.1",
   "scripts": {
+    "preinstall": "node -e \"if (!/pnpm/.test(process.env.npm_execpath || '')) { console.error('Use pnpm to install dependencies: pnpm install'); process.exit(1) }\"",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
@@ -23,6 +25,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.344.0",
+    "next-themes": "^0.4.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",

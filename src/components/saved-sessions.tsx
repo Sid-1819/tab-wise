@@ -170,7 +170,7 @@ export function SavedSessions({ onRestored }: { onRestored?: () => void }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 text-muted-foreground px-2">
+        <Button variant="ghost" size="sm" className="h-7 shrink-0 px-2 text-xs text-muted-foreground">
           Sessions ({sessions.length})
         </Button>
       </PopoverTrigger>

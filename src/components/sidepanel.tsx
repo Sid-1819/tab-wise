@@ -1,13 +1,14 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { MessageSquare } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SearchBar } from '@/components/search-bar';
 import { TabGroupCard } from '@/components/tab-group-card';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 import { ActivityStats } from '@/components/activity-stats';
 import { Toaster } from '@/components/ui/toaster';
 import { GroupToolbar } from '@/components/group-toolbar';
 import { GroupDialog } from '@/components/group-dialog';
-import { useTheme } from '@/components/theme-provider';
+import { Button } from '@/components/ui/button';
 import { RecentlyClosed } from '@/components/recently-closed';
 import { SavedSessions } from '@/components/saved-sessions';
 import { DuplicateBanner } from '@/components/duplicate-banner';
@@ -43,13 +44,33 @@ import {
 } from '@/lib/group-storage';
 import { useToast } from '@/components/ui/use-toast';
 
+const FEEDBACK_URL = 'https://github.com/Sid-1819/tab-wise/issues/new';
+
+function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCount: number }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <span
+        aria-hidden
+        className="relative flex size-5 shrink-0 items-center justify-center rounded-md bg-foreground text-background"
+      >
+        <span className="absolute inset-0.5 rounded-sm border border-background/40" />
+        <span className="absolute left-0.5 top-0.5 h-0.5 w-2 rounded-sm bg-background/80" />
+      </span>
+      <span className="text-sm font-semibold tracking-tight text-foreground shrink-0">Tab Wise</span>
+      <span className="text-[11px] text-muted-foreground truncate tabular-nums">
+        {tabCount} tabs · {groupCount} groups
+      </span>
+    </div>
+  );
+}
+
 export function SidePanel() {
   const prevDuplicateSigRef = useRef<string>('');
   const [duplicateDismissSig, setDuplicateDismissSig] = useState<string | null>(null);
 
   const [tabs, setTabs] = useState<TabInfo[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showActivity, setShowActivity] = useState(true);
+  const [showActivity, setShowActivity] = useState(false);
   const [customGroups, setCustomGroups] = useState<CustomGroupConfig[]>([]);
   const [autoGroupStrategy, setAutoGroupStrategy] =
     useState<AutoGroupStrategy>('domain');
@@ -63,7 +84,6 @@ export function SidePanel() {
   const [editingGroup, setEditingGroup] = useState<CustomGroupConfig | undefined>();
   const [tabsForNewGroup, setTabsForNewGroup] = useState<TabInfo[]>([]);
   const { toast } = useToast();
-  const { theme } = useTheme();
 
   const loadTabs = useCallback(async () => {
     chrome.tabs.query({}, async (chromeTabs) => {
@@ -431,43 +451,56 @@ export function SidePanel() {
     });
   }, [duplicateClusters, tabs, toast, loadTabs, updateActivity]);
 
-  const isDarkMode = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
   return (
-    <div className="w-full min-w-[500px] h-screen flex flex-col overflow-hidden p-3 bg-background box-border">
-      <header className="flex items-center justify-between mb-3 pb-2 border-b shrink-0">
-        <div className="flex items-center gap-2">
-          <img
-            src={isDarkMode ? '/icons/tw_dark_icon.png' : '/icons/tw_light_icon.png'}
-            alt="Tab Wise Logo"
-            className="h-6 w-6"
-          />
-          <span className="text-lg font-bold">Tab Wise</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setShowActivity(!showActivity)}
-            className="text-xs px-1.5 py-0.5 rounded-md bg-muted hover:bg-muted/80 transition-colors"
-            title={showActivity ? "Hide activity" : "Show activity"}
+    <div className="w-full min-w-0 h-screen flex flex-col overflow-hidden p-3 bg-background box-border">
+      <header className="mb-2 flex shrink-0 items-center justify-between gap-2 border-b border-hairline/70 bg-background/80 pb-2 backdrop-blur-md">
+        <SidePanelWordmark tabCount={filteredTabs.length} groupCount={totalGroups} />
+        <div className="flex shrink-0 items-center gap-0.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            title="Send feedback or report a bug"
+            aria-label="Send feedback or report a bug"
+            onClick={() => chrome.tabs.create({ url: FEEDBACK_URL })}
           >
-            {showActivity ? "Hide" : "Activity"}
-          </button>
-          <ThemeToggle />
+            <MessageSquare className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => setShowActivity(!showActivity)}
+            title={showActivity ? 'Hide activity & RAM' : 'Show activity & RAM'}
+          >
+            {showActivity ? 'Hide' : 'Activity'}
+          </Button>
+          <ThemeSwitcher />
         </div>
       </header>
 
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className="shrink-0">
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            totalTabs={filteredTabs.length}
-            totalGroups={totalGroups}
-          />
+          <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
-          <div className="flex items-center gap-1 mb-2 flex-wrap">
+          <div className="mb-2 flex items-center gap-1 overflow-x-auto">
             <SavedSessions onRestored={loadTabs} />
             <RecentlyClosed onRestored={loadTabs} />
+            <GroupToolbar
+              onCreateGroup={handleCreateGroup}
+              autoGroupStrategy={autoGroupStrategy}
+              onStrategyChange={setAutoGroupStrategy}
+              enableAutoGrouping={enableAutoGrouping}
+              onToggleAutoGrouping={setEnableAutoGrouping}
+              lastUsedInterval={lastUsedInterval}
+              onLastUsedIntervalChange={handleLastUsedIntervalChange}
+              enableAutoDelete={enableAutoDelete}
+              onToggleAutoDelete={handleAutoDeleteToggle}
+              autoDeleteThreshold={autoDeleteThreshold}
+              onAutoDeleteThresholdChange={handleAutoDeleteThresholdChange}
+            />
           </div>
 
           {showDuplicateBanner && (
@@ -479,29 +512,16 @@ export function SidePanel() {
             />
           )}
 
-          <SystemMemoryBar />
-
           {showActivity && (
-            <ActivityStats tabs={tabsWithActivity} totalGroups={totalGroups} />
+            <>
+              <SystemMemoryBar />
+              <ActivityStats tabs={tabsWithActivity} totalGroups={totalGroups} />
+            </>
           )}
-
-          <GroupToolbar
-            onCreateGroup={handleCreateGroup}
-            autoGroupStrategy={autoGroupStrategy}
-            onStrategyChange={setAutoGroupStrategy}
-            enableAutoGrouping={enableAutoGrouping}
-            onToggleAutoGrouping={setEnableAutoGrouping}
-            lastUsedInterval={lastUsedInterval}
-            onLastUsedIntervalChange={handleLastUsedIntervalChange}
-            enableAutoDelete={enableAutoDelete}
-            onToggleAutoDelete={handleAutoDeleteToggle}
-            autoDeleteThreshold={autoDeleteThreshold}
-            onAutoDeleteThresholdChange={handleAutoDeleteThresholdChange}
-          />
         </div>
 
         <ScrollArea className="flex-1 min-h-0">
-          <div className="space-y-3 pr-2">
+          <div className="space-y-2.5 py-1 pr-1">
             {allGroups.map((group) => (
               <TabGroupCard
                 key={group.id}

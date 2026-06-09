@@ -46,23 +46,21 @@ export function GroupToolbar({
   onAutoDeleteThresholdChange,
 }: GroupToolbarProps) {
   return (
-    <div className="flex items-center justify-between gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={onCreateGroup}
-          title="Create a new custom group"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Create Group
-        </Button>
-      </div>
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-7 w-7 shrink-0 p-0"
+        onClick={onCreateGroup}
+        title="Create a new custom group"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </Button>
 
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-1" />
-            Grouping Settings
+          <Button variant="outline" size="sm" className="h-7 w-7 shrink-0 p-0" title="Grouping settings">
+            <Settings className="h-3.5 w-3.5" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80" align="end">
@@ -176,6 +174,6 @@ export function GroupToolbar({
           </div>
         </PopoverContent>
       </Popover>
-    </div>
+    </>
   );
 }

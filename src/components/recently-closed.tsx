@@ -67,15 +67,15 @@ export function RecentlyClosed({ onRestored }: { onRestored?: () => void }) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="outline" size="sm" className="h-8" onClick={undoLast}>
-        <RotateCcw className="h-3.5 w-3.5 mr-1" />
-        Undo close
+    <>
+      <Button variant="outline" size="sm" className="h-7 shrink-0 px-2 text-xs" onClick={undoLast}>
+        <RotateCcw className="mr-1 h-3.5 w-3.5" />
+        Undo
       </Button>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 text-muted-foreground">
-            Recently closed ({tabSessions.length})
+          <Button variant="ghost" size="sm" className="h-7 shrink-0 px-2 text-xs text-muted-foreground">
+            Recent ({tabSessions.length})
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-0" align="start">
@@ -102,6 +102,6 @@ export function RecentlyClosed({ onRestored }: { onRestored?: () => void }) {
           </div>
         </PopoverContent>
       </Popover>
-    </div>
+    </>
   );
 }

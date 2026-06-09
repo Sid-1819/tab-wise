@@ -65,11 +65,11 @@ export function ActivityStats({ tabs }: ActivityStatsProps) {
   };
 
   return (
-    <div className="grid grid-cols-3 gap-2 mb-3">
+    <div className="grid grid-cols-3 gap-1.5 mb-2">
       {/* Focus Score */}
       <Popover>
         <PopoverTrigger asChild>
-          <div className="flex flex-col items-center p-2 rounded-md bg-muted/50 cursor-help">
+          <div className="flex flex-col items-center p-1.5 rounded-md bg-muted/50 cursor-help">
             <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
               <Target className="h-3 w-3" />
               <span>Focus</span>
@@ -96,7 +96,7 @@ export function ActivityStats({ tabs }: ActivityStatsProps) {
       {/* Tab Velocity */}
       <Popover>
         <PopoverTrigger asChild>
-          <div className="flex flex-col items-center p-2 rounded-md bg-muted/50 cursor-help">
+          <div className="flex flex-col items-center p-1.5 rounded-md bg-muted/50 cursor-help">
             <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
               <Gauge className="h-3 w-3" />
               <span>Velocity</span>
@@ -123,7 +123,7 @@ export function ActivityStats({ tabs }: ActivityStatsProps) {
       {/* Deep Dive Tabs */}
       <Popover>
         <PopoverTrigger asChild>
-          <div className="flex flex-col items-center p-2 rounded-md bg-muted/50 cursor-help">
+          <div className="flex flex-col items-center p-1.5 rounded-md bg-muted/50 cursor-help">
             <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
               <TrendingUp className="h-3 w-3" />
               <span>Deep Dive</span>
