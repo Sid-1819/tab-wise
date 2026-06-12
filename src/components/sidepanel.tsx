@@ -384,11 +384,19 @@ export function SidePanel() {
     setShowGroupDialog(true);
   };
 
-  const totalGroups = Object.keys(groupedTabs).length;
-
   const allGroups = useMemo(() => {
     return Object.values(groupedTabs);
   }, [groupedTabs]);
+
+  // Match visible groups: custom groups + auto groups with 2+ tabs.
+  // Single-tab auto groups render as flat tab rows, not group cards.
+  const totalGroups = useMemo(
+    () =>
+      allGroups.filter(
+        (group) => group.type === 'custom' || group.tabs.length > 1
+      ).length,
+    [allGroups]
+  );
 
   const duplicateClusters = useMemo(
     () => findDuplicateClusters(tabs),
@@ -469,7 +477,6 @@ export function SidePanel() {
             variant="ghost"
             size="sm"
             className="h-7 w-7 p-0"
-            title="Send feedback or report a bug"
             aria-label="Send feedback or report a bug"
             onClick={() => chrome.tabs.create({ url: FEEDBACK_URL })}
           >
@@ -480,8 +487,8 @@ export function SidePanel() {
             variant="ghost"
             size="sm"
             className="h-7 px-2 text-xs"
+            aria-label={showActivity ? 'Hide activity & RAM' : 'Show activity & RAM'}
             onClick={() => setShowActivity(!showActivity)}
-            title={showActivity ? 'Hide activity & RAM' : 'Show activity & RAM'}
           >
             {showActivity ? 'Hide' : 'Activity'}
           </Button>
