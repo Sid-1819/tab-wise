@@ -6,7 +6,15 @@ import type {
 } from '@/types/session';
 
 export function isLikelyRestorableUrl(url: string): boolean {
-  if (!url || url.startsWith('javascript:')) return false;
+  const normalized = url?.trim().toLowerCase();
+  if (
+    !normalized ||
+    normalized.startsWith('javascript:') ||
+    normalized.startsWith('data:') ||
+    normalized.startsWith('vbscript:')
+  ) {
+    return false;
+  }
   try {
     const u = new URL(url);
     if (u.protocol === 'chrome:' || u.protocol === 'devtools:' || u.protocol === 'edge:') {
