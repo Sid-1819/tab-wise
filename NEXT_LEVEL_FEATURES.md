@@ -2,30 +2,41 @@
 
 This document outlines advanced features that can elevate Tab Wise from a basic tab manager to a premium productivity tool.
 
+## ✅ Current Status Audit
+
+Use these markers throughout this roadmap:
+
+- ✅ **Implemented**: available in the current codebase
+- ⏳ **Planned**: still on the roadmap
+
+Implemented today: session save/restore, custom groups, duplicate detection, recently closed tabs, dark/light theme, activity tracking, and the system memory bar (Chrome Dev/Canary only).
+
+Still planned: keyboard shortcuts, export/import sessions, fuzzy search, tab sorting UI, and CI/tests.
+
 ## 🎯 Core Feature Enhancements
 
 ### 1. **Session Management**
-- **Save Sessions**: Save current tab groups as named sessions
-- **Restore Sessions**: Quick restore of previously saved sessions
-- **Auto-Save**: Automatically save sessions on browser close
-- **Session Templates**: Create reusable session templates (Work, Research, Shopping, etc.)
-- **Session Sharing**: Export/import sessions as JSON files
-- **Cloud Sync**: Sync sessions across devices using Chrome storage API
+- ✅ **Save Sessions**: Save current tab groups as named sessions
+- ✅ **Restore Sessions**: Quick restore of previously saved sessions
+- ⏳ **Auto-Save**: Automatically save sessions on browser close
+- ⏳ **Session Templates**: Create reusable session templates (Work, Research, Shopping, etc.)
+- ⏳ **Session Sharing**: Export/import sessions as JSON files
+- ⏳ **Cloud Sync**: Sync sessions across devices using Chrome storage API
 
 ### 2. **Advanced Tab Organization**
 
 #### Tab Grouping
-- **Custom Groups**: Create manual tab groups with custom names and colors
-- **Smart Auto-Grouping**: AI-powered grouping by:
+- ✅ **Custom Groups**: Create manual tab groups with custom names and colors
+- ⏳ **Smart Auto-Grouping**: AI-powered grouping by:
   - Content similarity
   - Time of day
   - User activity patterns
   - Project context
-- **Nested Groups**: Sub-groups within groups for better organization
-- **Group Favorites**: Pin frequently used groups for quick access
+- ⏳ **Nested Groups**: Sub-groups within groups for better organization
+- ⏳ **Group Favorites**: Pin frequently used groups for quick access
 
 #### Tab Sorting
-- **Multiple Sort Options**:
+- ⏳ **Multiple Sort Options**:
   - Alphabetical (A-Z, Z-A)
   - Most recently used
   - Most frequently visited
@@ -36,26 +47,26 @@ This document outlines advanced features that can elevate Tab Wise from a basic 
 ### 3. **Productivity Features**
 
 #### Tab Insights & Analytics
-- **Tab Usage Dashboard**:
+- ⏳ **Tab Usage Dashboard**:
   - Daily/weekly tab statistics
   - Most visited domains
   - Average tabs open per day
-  - Time spent per tab/domain
+  - ✅ Time spent per tab/domain
   - Tab creation patterns
-- **Tab Health Score**: Metrics on tab management habits
-- **Productivity Reports**: Weekly/monthly reports on browsing patterns
+- ⏳ **Tab Health Score**: Metrics on tab management habits
+- ⏳ **Productivity Reports**: Weekly/monthly reports on browsing patterns
 
 #### Smart Suggestions
-- **Duplicate Detection**: Find and merge duplicate tabs
-- **Inactive Tab Detection**: Auto-suggest closing tabs unused for X days
-- **Memory Usage Alerts**: Warn when too many tabs are consuming resources
-- **Related Tabs**: Suggest grouping related tabs together
-- **Tab Recommendations**: Suggest tabs to close/archive based on usage
+- ✅ **Duplicate Detection**: Find and merge duplicate tabs
+- ⏳ **Inactive Tab Detection**: Auto-suggest closing tabs unused for X days
+- ⏳ **Memory Usage Alerts**: Warn when too many tabs are consuming resources
+- ⏳ **Related Tabs**: Suggest grouping related tabs together
+- ⏳ **Tab Recommendations**: Suggest tabs to close/archive based on usage
 
 ### 4. **Search & Filter Enhancements**
 
 #### Advanced Search
-- **Fuzzy Search**: Match partial keywords
+- ⏳ **Fuzzy Search**: Match partial keywords
 - **Filter by**:
   - Domain
   - Date opened
@@ -67,13 +78,13 @@ This document outlines advanced features that can elevate Tab Wise from a basic 
 - **Multi-criteria Search**: Combine multiple filters
 
 #### Quick Actions
-- **Keyboard Shortcuts**:
+- ⏳ **Keyboard Shortcuts**:
   - Ctrl+K: Open command palette
   - Ctrl+F: Focus search
   - Ctrl+N: New tab group
   - Ctrl+S: Save session
   - Esc: Close popup
-- **Command Palette**: Quick access to all features
+- ⏳ **Command Palette**: Quick access to all features
 
 ### 5. **Tab Actions & Automation**
 
@@ -103,7 +114,7 @@ This document outlines advanced features that can elevate Tab Wise from a basic 
 - **Visual Indicators**: Show suspended tabs with dimmed appearance
 
 #### Memory Optimization
-- **Memory Usage Display**: Show memory per tab/group
+- ✅ **Memory Usage Display**: Show system memory usage (Chrome Dev/Canary only)
 - **One-Click Optimize**: Close/suspend high-memory tabs
 - **Memory Threshold Alerts**: Alert when memory usage is high
 
@@ -146,9 +157,9 @@ This document outlines advanced features that can elevate Tab Wise from a basic 
 ### 10. **Data & Privacy**
 
 #### Export & Backup
-- **Full Export**: Export all tabs, groups, and sessions as JSON
+- ⏳ **Full Export**: Export all tabs, groups, and sessions as JSON
 - **Scheduled Backups**: Auto-backup to local storage
-- **Import from Other Managers**: Import from other tab managers
+- ⏳ **Import from Other Managers**: Import from other tab managers
 - **CSV/Excel Export**: Export tab data for analysis
 
 #### Privacy & Security
@@ -234,9 +245,9 @@ This document outlines advanced features that can elevate Tab Wise from a basic 
 
 ### Architecture Improvements
 - **State Management**: Implement Zustand/Redux for complex state
-- **Testing**: Add Jest + React Testing Library
+- ⏳ **Testing**: Add Jest + React Testing Library
 - **E2E Testing**: Playwright/Cypress for extension testing
-- **CI/CD**: Automated build and release pipeline
+- ⏳ **CI/CD**: Automated build and release pipeline
 - **Error Tracking**: Sentry integration for error monitoring
 - **Analytics**: Google Analytics or Plausible for usage tracking
 - **Performance Monitoring**: Lighthouse CI for performance checks
@@ -293,15 +304,15 @@ This document outlines advanced features that can elevate Tab Wise from a basic 
 
 ## 💡 Quick Wins (Easy to Implement, High Impact)
 
-1. **Keyboard Shortcuts** - High productivity boost
-2. **Duplicate Tab Detection** - Immediate value
+1. ⏳ **Keyboard Shortcuts** - High productivity boost
+2. ✅ **Duplicate Tab Detection** - Immediate value
 3. **Compact View Toggle** - Better UX
 4. **Tab Count Badge** - Visual feedback
-5. **Recently Closed Tabs** - Common request
-6. **Export as Markdown** - Easy sharing
-7. **Dark/Light/Auto Theme** - User preference
+5. ✅ **Recently Closed Tabs** - Common request
+6. ⏳ **Export as Markdown** - Easy sharing
+7. ✅ **Dark/Light Theme** - User preference (auto theme remains planned)
 8. **Pin Favorite Groups** - Quick access
-9. **Tab Sorting Options** - Better organization
+9. ⏳ **Tab Sorting Options** - Better organization
 10. **Undo Close Tab** - Error recovery
 
 ---
@@ -311,10 +322,10 @@ This document outlines advanced features that can elevate Tab Wise from a basic 
 Start with these features for maximum impact:
 
 1. ✅ **Session Management** (save/restore)
-2. ✅ **Keyboard Shortcuts**
+2. ⏳ **Keyboard Shortcuts**
 3. ✅ **Duplicate Detection**
-4. ✅ **Advanced Search**
-5. ✅ **Export/Import**
-6. ✅ **Tab Analytics**
+4. ⏳ **Advanced Search**
+5. ⏳ **Export/Import**
+6. ✅ **Activity Tracking** (broader analytics remain planned)
 
 These features provide immediate value and differentiate Tab Wise from basic tab managers.
