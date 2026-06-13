@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & general discussion
+    url: https://github.com/Sid-1819/tab-wise/discussions
+    about: Ask questions or share ideas that aren't bugs or feature requests
+  - name: Contributing guide
+    url: https://github.com/Sid-1819/tab-wise/blob/main/CONTRIBUTING.md
+    about: Setup, code guidelines, and pull request process
