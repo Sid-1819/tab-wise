@@ -52,15 +52,22 @@ export function GroupToolbar({
         size="sm"
         className="h-7 w-7 shrink-0 p-0"
         onClick={onCreateGroup}
+        aria-label="Create a new custom group"
         title="Create a new custom group"
       >
-        <Plus className="h-3.5 w-3.5" />
+        <Plus className="h-3.5 w-3.5" aria-hidden />
       </Button>
 
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-7 w-7 shrink-0 p-0" title="Grouping settings">
-            <Settings className="h-3.5 w-3.5" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 w-7 shrink-0 p-0"
+            aria-label="Grouping settings"
+            title="Grouping settings"
+          >
+            <Settings className="h-3.5 w-3.5" aria-hidden />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80" align="end">
