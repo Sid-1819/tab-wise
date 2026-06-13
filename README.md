@@ -138,6 +138,12 @@ Feature ideas and roadmap: [NEXT_LEVEL_FEATURES.md](./NEXT_LEVEL_FEATURES.md)
 
 - **Bug reports:** [GitHub Issues](https://github.com/Sid-1819/tab-wise/issues)
 - **Feature requests:** [GitHub Discussions](https://github.com/Sid-1819/tab-wise/discussions)
+- **Security issues:** [Security policy](./SECURITY.md) — please report privately, not via public issues
+
+## Community
+
+- [Contributing](./CONTRIBUTING.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
 
 ---
 
