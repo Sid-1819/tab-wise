@@ -190,7 +190,7 @@ function groupByDomain(tabs: TabInfo[], groups: GroupedTabs): void {
         };
       }
       groups[groupKey].tabs.push(tab);
-    } catch (e) {
+    } catch {
       const groupName = 'Other';
       const groupKey = `auto_${groupName}`;
       if (!groups[groupKey]) {
@@ -335,7 +335,7 @@ function groupByProjectContext(tabs: TabInfo[], groups: GroupedTabs): void {
         projectMap.set(projectKey, []);
       }
       projectMap.get(projectKey)!.push(tab);
-    } catch (e) {
+    } catch {
       // Invalid URL, add to "Other"
       if (!projectMap.has('other')) {
         projectMap.set('other', []);
