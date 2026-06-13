@@ -6,3 +6,6 @@ contact_links:
   - name: Contributing guide
     url: https://github.com/Sid-1819/tab-wise/blob/main/CONTRIBUTING.md
     about: Setup, code guidelines, and pull request process
+  - name: Report a security vulnerability
+    url: https://github.com/Sid-1819/tab-wise/security/advisories/new
+    about: Private security reports — do not use public issues for vulnerabilities
