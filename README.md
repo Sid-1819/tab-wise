@@ -6,6 +6,8 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 
 ---
 
+<img width="1280" height="800" alt="Screenshot 2026-06-13 at 14 45 02" src="https://github.com/user-attachments/assets/e609ae2f-9c95-4fc5-b904-49c1b9a1d60a" />
+
 ## Features
 
 - **Smart Tab Search** — Find tabs by title or URL
