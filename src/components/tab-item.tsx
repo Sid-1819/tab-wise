@@ -35,7 +35,6 @@ export function TabItem({
   onClick,
   showActivity = true,
   customGroups = [],
-  currentGroupId: _currentGroupId,
   onAddToGroup,
   onRemoveFromGroup,
   onDuplicate,
@@ -131,8 +130,10 @@ export function TabItem({
               onClick={(e) => {
                 e.stopPropagation();
               }}
+              aria-label={`Manage ${tab.title}`}
+              title="Manage tab"
             >
-              <MoreVertical className="h-3 w-3" />
+              <MoreVertical className="h-3 w-3" aria-hidden />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-48 p-1" align="end">
@@ -252,8 +253,10 @@ export function TabItem({
           e.stopPropagation();
           onClose(tab.id);
         }}
+        aria-label={`Close ${tab.title}`}
+        title="Close tab"
       >
-        <X className="h-3 w-3" />
+        <X className="h-3 w-3" aria-hidden />
       </Button>
     </div>
   );

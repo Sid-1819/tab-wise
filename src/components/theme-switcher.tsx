@@ -43,6 +43,7 @@ export function ThemeSwitcher() {
         size="icon"
         className="h-7 w-7"
         aria-label="Toggle dark mode"
+        title="Toggle dark mode"
         onClick={toggleTheme}
       >
         <span className="relative flex size-3.5 items-center justify-center">
@@ -75,8 +76,9 @@ export function ThemeSwitcher() {
             size="icon"
             className="h-7 w-7"
             aria-label="Theme preset"
+            title="Theme preset"
           >
-            <Palette className="size-3.5" />
+            <Palette className="size-3.5" aria-hidden />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">

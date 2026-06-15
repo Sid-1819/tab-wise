@@ -149,9 +149,10 @@ export function TabGroupCard({
               size="icon"
               className={groupActionBtn}
               onClick={() => onConvertToCustom(group)}
+              aria-label={`Save ${displayName} as custom group`}
               title="Save as custom group"
             >
-              <Bookmark className="h-3.5 w-3.5" />
+              <Bookmark className="h-3.5 w-3.5" aria-hidden />
             </Button>
           )}
           {isCustomGroup && onToggleImportant && (
@@ -160,6 +161,11 @@ export function TabGroupCard({
               size="icon"
               className={groupActionBtn}
               onClick={() => onToggleImportant(group.id)}
+              aria-label={
+                group.isImportant
+                  ? `Remove important mark from ${displayName}`
+                  : `Mark ${displayName} as important`
+              }
               title={group.isImportant ? 'Remove important mark' : 'Mark as important'}
             >
               <Shield
@@ -167,6 +173,7 @@ export function TabGroupCard({
                   'h-3.5 w-3.5',
                   group.isImportant && 'fill-amber-500 text-amber-500'
                 )}
+                aria-hidden
               />
             </Button>
           )}
@@ -176,30 +183,39 @@ export function TabGroupCard({
               size="icon"
               className={groupActionBtn}
               onClick={() => onEditGroup(group.id)}
+              aria-label={`Edit ${displayName}`}
               title="Edit group"
             >
-              <Edit2 className="h-3.5 w-3.5" />
+              <Edit2 className="h-3.5 w-3.5" aria-hidden />
             </Button>
           )}
           {isCustomGroup && onDeleteGroup && (
             <Button
               variant="ghost"
               size="icon"
-              className={cn(groupActionBtn, 'text-destructive hover:text-destructive')}
+              className={cn(
+                groupActionBtn,
+                'text-destructive hover:text-destructive'
+              )}
               onClick={() => onDeleteGroup(group.id)}
+              aria-label={`Delete ${displayName}`}
               title="Delete group"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3.5 w-3.5" aria-hidden />
             </Button>
           )}
           <Button
             variant="ghost"
             size="icon"
-            className={cn(groupActionBtn, 'text-destructive hover:bg-destructive/10 hover:text-destructive')}
+            className={cn(
+              groupActionBtn,
+              'text-destructive hover:bg-destructive/10 hover:text-destructive'
+            )}
             onClick={handleCloseAll}
+            aria-label={`Close all tabs in ${displayName}`}
             title="Close all tabs"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3.5 w-3.5" aria-hidden />
           </Button>
         </div>
       </CardHeader>

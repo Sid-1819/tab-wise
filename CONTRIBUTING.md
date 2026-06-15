@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing! Tab Wise is an open-source Chrome extension, and community help is welcome.
 
+This project follows our [Code of Conduct](./CODE_OF_CONDUCT.md). By participating, you agree to uphold it.
+
 ## Ways to contribute
 
 - **Bug reports** — Something broken? [Open an issue](https://github.com/Sid-1819/tab-wise/issues)
@@ -90,6 +92,10 @@ docs: clarify pnpm setup in README
 ## Feature roadmap
 
 See [NEXT_LEVEL_FEATURES.md](./NEXT_LEVEL_FEATURES.md) for planned features. Issues labeled `good first issue` or `help wanted` are great starting points.
+
+## Security
+
+Do **not** open public issues for security vulnerabilities. See [SECURITY.md](./SECURITY.md) for how to report them privately.
 
 ## Questions?
 

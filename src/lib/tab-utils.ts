@@ -8,6 +8,7 @@ import {
 } from '@/types/tab';
 
 const KNOWN_DOMAINS: DomainMapping = {
+  // Major platforms
   'google.com': 'Google',
   'youtube.com': 'YouTube',
   'github.com': 'GitHub',
@@ -18,6 +19,48 @@ const KNOWN_DOMAINS: DomainMapping = {
   'reddit.com': 'Reddit',
   'amazon.com': 'Amazon',
   'netflix.com': 'Netflix',
+  // Productivity & collaboration
+  'notion.so': 'Notion',
+  'figma.com': 'Figma',
+  'slack.com': 'Slack',
+  'discord.com': 'Discord',
+  'linear.app': 'Linear',
+  'trello.com': 'Trello',
+  'asana.com': 'Asana',
+  'clickup.com': 'ClickUp',
+  'miro.com': 'Miro',
+  'canva.com': 'Canva',
+  // Dev tools
+  'gitlab.com': 'GitLab',
+  'bitbucket.org': 'Bitbucket',
+  'vercel.com': 'Vercel',
+  'netlify.com': 'Netlify',
+  'heroku.com': 'Heroku',
+  'replit.com': 'Replit',
+  'codepen.io': 'CodePen',
+  'codesandbox.io': 'CodeSandbox',
+  // Communication
+  'zoom.us': 'Zoom',
+  'teams.microsoft.com': 'Microsoft Teams',
+  'meet.google.com': 'Google Meet',
+  'web.whatsapp.com': 'WhatsApp',
+  'telegram.org': 'Telegram',
+  // Media & content
+  'medium.com': 'Medium',
+  'dev.to': 'DEV Community',
+  'twitch.tv': 'Twitch',
+  'spotify.com': 'Spotify',
+  'pinterest.com': 'Pinterest',
+  'instagram.com': 'Instagram',
+  // Cloud & storage
+  'drive.google.com': 'Google Drive',
+  'dropbox.com': 'Dropbox',
+  'onedrive.live.com': 'OneDrive',
+  'icloud.com': 'iCloud',
+  // AI tools
+  'chat.openai.com': 'ChatGPT',
+  'claude.ai': 'Claude',
+  'huggingface.co': 'Hugging Face',
 };
 
 export function prettifyDomain(domain: string): string {
@@ -147,7 +190,7 @@ function groupByDomain(tabs: TabInfo[], groups: GroupedTabs): void {
         };
       }
       groups[groupKey].tabs.push(tab);
-    } catch (e) {
+    } catch {
       const groupName = 'Other';
       const groupKey = `auto_${groupName}`;
       if (!groups[groupKey]) {
@@ -292,7 +335,7 @@ function groupByProjectContext(tabs: TabInfo[], groups: GroupedTabs): void {
         projectMap.set(projectKey, []);
       }
       projectMap.get(projectKey)!.push(tab);
-    } catch (e) {
+    } catch {
       // Invalid URL, add to "Other"
       if (!projectMap.has('other')) {
         projectMap.set('other', []);

@@ -145,7 +145,13 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
 });
 
 // Handle messages from side panel
-chrome.runtime.onMessage.addListener((message: BackgroundMessage, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: BackgroundMessage, sender, sendResponse) => {
+  // Security fix: Validate the sender of the message to ensure it originates from the extension's own trusted UI
+  // and not from a content script injected into an untrusted web page or an external source.
+  if (sender.id !== chrome.runtime.id || sender.tab) {
+    sendResponse({ success: false, error: 'Unauthorized sender' });
+    return false;
+  }
   handleMessage(message).then(sendResponse);
   return true; // Keep channel open for async response
 });
