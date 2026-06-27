@@ -7,21 +7,17 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 ---
 
 <img width="1280" height="800" alt="Screenshot 2026-06-13 at 14 45 02" src="https://github.com/user-attachments/assets/e609ae2f-9c95-4fc5-b904-49c1b9a1d60a" />
-
 ## Features
 
-- **Smart Tab Search** — Find tabs by title or URL
-- **Tab Grouping** — Auto-group by domain or custom strategies; create and manage custom groups with colors
-- **Saved Sessions** — Capture the current window (URLs, pins, tab groups) and restore here or in a new window
-- **Recently Closed** — Recover tabs you closed recently
-- **Duplicate Detection** — Spot duplicate tabs and close extras
-- **Activity Tracking** — See time spent and visit stats per tab
-- **System Memory Bar** — Monitor memory usage *(Chrome Dev/Canary with `system.memory` permission)*
-- **Light / Dark Theme** — System-aware theme with smooth transitions
-- **Side Panel UI** — Stays open beside your browsing context
-
----
-
+- **Smart Tab Search** 
+- **Tab Grouping** — Organize tabs with domain-based auto-grouping and manual group creation. Refer to 'Auto-Grouping Strategies' for details.
+- **Saved Sessions** 
+- **Recently Closed** 
+- **Duplicate Detection** 
+- **Activity Tracking** 
+- **System Memory Bar** 
+- **Light / Dark Theme** 
+- **Side Panel UI**
 ## Installation
 
 ### From Chrome Web Store
@@ -79,6 +75,14 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 4. Use group actions to close, favorite, or reorganize tabs
 5. Save and restore sessions from the sessions panel
 6. Toggle theme from the header
+
+---
+
+## Auto-Grouping Strategies
+Tab Wise employs intelligent strategies to automatically organize your open tabs.
+
+- **Domain-based Grouping**: Tabs are primarily grouped by their root domain. For example, all tabs open from `github.com` (e.g., `github.com/repo1`, `github.com/profile`) will be placed into a single, labeled group. This simplifies finding and managing related content.
+- **Future Enhancements**: The extension is designed to support more sophisticated, potentially user-defined auto-grouping heuristics in the future, expanding beyond domain-based rules to further customize tab organization.
 
 ---
 
