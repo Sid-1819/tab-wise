@@ -77,15 +77,17 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 6. Toggle theme from the header
 
 ---
+## Auto-Grouping Strategies
 
 ## Auto-Grouping Strategies
-Tab Wise employs intelligent strategies to automatically organize your open tabs.
+Tab Wise intelligently organizes your open tabs to streamline your browsing experience. The primary heuristic used for automatic grouping is:
 
-- **Domain-based Grouping**: Tabs are primarily grouped by their root domain. For example, all tabs open from `github.com` (e.g., `github.com/repo1`, `github.com/profile`) will be placed into a single, labeled group. This simplifies finding and managing related content.
-- **Future Enhancements**: The extension is designed to support more sophisticated, potentially user-defined auto-grouping heuristics in the future, expanding beyond domain-based rules to further customize tab organization.
+- **Domain-based Grouping**: Tabs are grouped based on their **root domain**.
+  - **Heuristic**: The extension extracts the main domain from a tab's URL (e.g., `github.com` from `https://www.github.com/user/repo`). All tabs sharing the same root domain are placed into a single, labeled group.
+  - **Example**: Tabs like `github.com/repo1`, `github.com/profile`, and `news.github.com` would all be grouped under `github.com`.
+  - **Benefit**: This simplifies finding and managing related content, providing a cleaner overview of your active browser usage.
 
----
-
+We are continually exploring more sophisticated auto-grouping heuristics for future releases to offer even more customized tab organization.
 ## Tech Stack
 
 | Layer | Tools |
