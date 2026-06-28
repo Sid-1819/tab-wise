@@ -142,6 +142,25 @@ Feature ideas and roadmap: [NEXT_LEVEL_FEATURES.md](./NEXT_LEVEL_FEATURES.md)
 
 ---
 
+## Roadmap
+
+Our vision for the next 6 months focuses on stability, performance, and advanced automation features. Here is what we have planned:
+
+### Q3 2025: Stability & Foundation
+- Address critical bug fixes (Issues #46, #30).
+- Standardize release versioning (#11).
+- Implement automated CI pipelines for build and test validation.
+
+### Q4 2025: Advanced Features
+- Enhance tab management with user-requested high-impact features (Issues #33, #31, #32).
+- Explore intelligent content-based grouping algorithms beyond domain heuristics.
+- Sync session data across devices using cloud storage integration.
+
+### Q1 2026: Optimization & Polish
+- Performance tuning for memory-heavy tab management scenarios.
+- Refinement of UI/UX based on community feedback and accessibility audits.
+
+*Note: Timelines are subject to change based on community priorities and technical feasibility.*
 ## Support
 
 - **Bug reports:** [GitHub Issues](https://github.com/Sid-1819/tab-wise/issues)
