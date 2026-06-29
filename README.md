@@ -84,6 +84,17 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 6. Toggle theme from the header
 
 ---
+
+## Troubleshooting & FAQ
+
+### Why isn't the side panel opening?
+Ensure you are on a compatible web page. Chrome's Side Panel API does not function on certain internal browser pages (e.g., chrome://settings). If it fails on standard pages, try reloading the extension in `chrome://extensions/`.
+
+### How do I reset my data?
+Tab Wise stores data locally. You can reset your saved sessions and preferences by navigating to `chrome://extensions/`, clicking the 'Details' button for Tab Wise, and selecting 'Clear site data'.
+
+### Reporting Issues
+If you encounter persistent bugs (such as #46 or #30), please check our [GitHub Issues](https://github.com/Sid-1819/tab-wise/issues) to see if a fix is already in progress, or open a new ticket with your Chrome version and a description of the issue.
 ## Auto-Grouping Strategies
 
 ## Auto-Grouping Strategies
