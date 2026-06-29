@@ -10,9 +10,17 @@ This project follows our [Code of Conduct](./CODE_OF_CONDUCT.md). By participati
 - **Feature ideas** — [Start a discussion](https://github.com/Sid-1819/tab-wise/discussions) or comment on the [roadmap](./NEXT_LEVEL_FEATURES.md)
 - **Code** — Fix bugs or implement features via pull request
 - **Documentation** — Improve README, comments, or examples
+### Troubleshooting
 
 ### Troubleshooting
-Stuck during development or running into common errors? Check the [Troubleshooting/FAQ section in our README](README.md#troubleshooting) before opening an issue.
+
+Stuck during development? Common issues include:
+
+- **pnpm version:** Ensure you are using `pnpm` v11+. If you encounter node_modules errors, try running `pnpm store prune` followed by `pnpm install`.
+- **Hot Reloading:** The Chrome extension architecture sometimes fails to pick up background script changes automatically. If changes aren't reflected after a `pnpm dev` build, manually reload the extension via the `chrome://extensions/` page.
+- **Environment:** If you experience unexpected build failures, verify your Node.js version matches the recommended `20+` version.
+
+For more advanced debugging, check the [Troubleshooting/FAQ section in our README](README.md#troubleshooting) or search our [GitHub Issues](https://github.com/Sid-1819/tab-wise/issues).
 ## Before you start
 
 1. Search [existing issues](https://github.com/Sid-1819/tab-wise/issues) to avoid duplicate work
