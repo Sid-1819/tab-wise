@@ -11,6 +11,8 @@ This project follows our [Code of Conduct](./CODE_OF_CONDUCT.md). By participati
 - **Code** — Fix bugs or implement features via pull request
 - **Documentation** — Improve README, comments, or examples
 
+### Troubleshooting
+Stuck during development or running into common errors? Check the [Troubleshooting/FAQ section in our README](README.md#troubleshooting) before opening an issue.
 ## Before you start
 
 1. Search [existing issues](https://github.com/Sid-1819/tab-wise/issues) to avoid duplicate work
