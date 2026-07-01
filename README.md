@@ -174,6 +174,31 @@ Our vision for the next 6 months focuses on stability, performance, and advanced
 - **Feature requests:** [GitHub Discussions](https://github.com/Sid-1819/tab-wise/discussions)
 - **Security issues:** [Security policy](./SECURITY.md) — please report privately, not via public issues
 
+---
+
+## Troubleshooting & FAQ
+
+### For Developers
+
+**Why can't I use `npm install`?**  
+This project enforces `pnpm`. Install it first with `npm install -g pnpm`, then run `pnpm install`.
+
+**Hot reload isn't reflecting my changes?**  
+Hot reload doesn't apply automatically for extensions. After making changes, go to `chrome://extensions` and click the reload button on the extension manually.
+
+**Which folder do I load in Chrome?**  
+Load the `dist/` folder — not the project root. Go to `chrome://extensions` → Enable Developer Mode → Load Unpacked → select `dist/`.
+
+### For Users
+
+**The side panel isn't opening?**  
+Side panels require Chrome 114 or newer. Update your Chrome browser and try again.
+
+**Some tabs aren't being restored?**  
+Chrome blocks access to `chrome://` and extension URLs for security reasons. These tabs cannot be restored — this is a Chrome limitation, not a bug.
+
+---
+
 ## Community
 
 - [Contributing](./CONTRIBUTING.md)
