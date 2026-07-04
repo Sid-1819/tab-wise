@@ -234,3 +234,15 @@ This project is licensed under the [MIT License](./LICENSE).
 ---
 
 Made with care by [Siddhesh Shirdhankar](https://github.com/Sid-1819)
+## Preview
+
+Experience a streamlined workflow directly in your browser's side panel.
+
+| Tab Management | Session Saving |
+| :--- | :--- |
+| ![Tab Search and Grouping](https://github.com/user-attachments/assets/e609ae2f-9c95-4fc5-b904-49c1b9a1d60a) | ![Session Restore View](https://github.com/user-attachments/assets/placeholder-session-view) |
+
+### In Action
+![Tab Wise Demo](https://github.com/user-attachments/assets/your-gif-url-here)
+
+*Quick tab searching, domain-based grouping, and session management at your fingertips.*
