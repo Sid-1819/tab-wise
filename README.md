@@ -21,7 +21,7 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 
 ## Live Demo
 
-![Tab Wise Demo](https://github.com/user-attachments/assets/your-gif-url-here)
+![Tab Wise Demo](https://youtu.be/6L6YTyywfSU?si=v3e0sjXn0upO5dK0)
 
 *See the side panel in action: quick tab searching, domain-based grouping, and session management at your fingertips.*
 
