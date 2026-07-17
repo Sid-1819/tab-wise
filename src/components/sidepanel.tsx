@@ -45,7 +45,7 @@ import {
 } from '@/lib/group-storage';
 import { useToast } from '@/components/ui/use-toast';
 
-const FEEDBACK_URL = 'https://app.encatch.com/s/51cdd46c-4f2a-4d21-9e3d-5207b56f6ee5';
+const FEEDBACK_URL = 'https://form.encatch.com/s/51cdd46c-4f2a-4d21-9e3d-5207b56f6ee5';
 
 function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCount: number }) {
   const { resolvedTheme } = useTheme();
