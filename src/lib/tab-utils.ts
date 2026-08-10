@@ -6,6 +6,7 @@ import {
   CustomGroupConfig,
   TabGroup,
 } from '@/types/tab';
+import { scoreTab } from '@/lib/fuzzy-match';
 
 const KNOWN_DOMAINS: DomainMapping = {
   // Major platforms
@@ -367,12 +368,14 @@ export function filterTabs(
   tabs: TabInfo[],
   query: string
 ): TabInfo[] {
-  const lowerQuery = query.toLowerCase();
-  return tabs.filter(
-    (tab) =>
-      tab.title.toLowerCase().includes(lowerQuery) ||
-      tab.url.toLowerCase().includes(lowerQuery)
-  );
+  const trimmed = query.trim();
+  if (!trimmed) return tabs;
+
+  return tabs
+    .map((tab) => ({ tab, score: scoreTab(tab, trimmed) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(({ tab }) => tab);
 }
 
 /**
