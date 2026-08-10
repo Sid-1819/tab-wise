@@ -43,6 +43,7 @@ import {
   getGroupingSettings,
   saveGroupingSettings,
 } from '@/lib/group-storage';
+import { getTabFaviconUrl } from '@/lib/favicon';
 import { useToast } from '@/components/ui/use-toast';
 
 const FEEDBACK_URL = 'https://form.encatch.com/s/51cdd46c-4f2a-4d21-9e3d-5207b56f6ee5';
@@ -101,7 +102,7 @@ export function SidePanel() {
         id: tab.id!,
         title: tab.title || '',
         url: tab.url || '',
-        favIconUrl: tab.favIconUrl,
+        favIconUrl: getTabFaviconUrl(tab.url || ''),
         active: tab.active,
         windowId: tab.windowId,
         index: tab.index,
@@ -562,7 +563,7 @@ export function SidePanel() {
         </div>
 
         <ScrollArea className="flex-1 min-h-0">
-          <div className="space-y-2.5 py-1 pr-1">
+          <div className="space-y-1 py-0.5 pr-1">
             {allGroups.map((group) => (
               <TabGroupCard
                 key={group.id}

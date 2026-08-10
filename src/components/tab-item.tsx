@@ -27,7 +27,7 @@ interface TabItemProps {
   nestedInGroup?: boolean;
 }
 
-const DEFAULT_FAVICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
+import { DEFAULT_FAVICON } from '@/lib/favicon';
 
 export function TabItem({
   tab,
@@ -76,7 +76,7 @@ export function TabItem({
     <div
       className={cn(
         "flex items-center gap-2 rounded-md transition-colors cursor-pointer group",
-        nestedInGroup ? "py-1.5 pl-2 pr-1" : "py-1.5 px-2",
+        nestedInGroup ? "py-1 pl-2 pr-1" : "py-1 px-2",
         "hover:bg-accent",
         isActive && !nestedInGroup && "bg-primary/10 border-l-2 border-primary",
         isActive && nestedInGroup && "bg-primary/10"
