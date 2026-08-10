@@ -78,7 +78,7 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 ## Usage
 
 1. Open Tab Wise from the toolbar icon
-2. Search tabs using the search bar
+2. Search tabs using the search bar — press `/` while the side panel is focused to jump to search
 3. Click a tab to switch to it, or close individual tabs
 4. Use group actions to close, favorite, or reorganize tabs
 5. Save and restore sessions from the sessions panel

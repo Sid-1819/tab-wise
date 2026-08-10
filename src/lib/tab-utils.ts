@@ -6,6 +6,8 @@ import {
   CustomGroupConfig,
   TabGroup,
 } from '@/types/tab';
+import { scoreTab } from '@/lib/fuzzy-match';
+import { getTabFaviconUrl } from '@/lib/favicon';
 
 const KNOWN_DOMAINS: DomainMapping = {
   // Major platforms
@@ -104,7 +106,7 @@ export function groupTabs(
       isImportant: customGroup.isImportant,
       createdAt: customGroup.createdAt,
       lastModified: customGroup.lastModified,
-      favicon: groupTabs[0]?.favIconUrl,
+      favicon: getTabFaviconUrl(groupTabs[0]?.url || ''),
     };
 
     groupTabs.forEach((tab) => tabsInCustomGroups.add(tab.id));
@@ -186,7 +188,7 @@ function groupByDomain(tabs: TabInfo[], groups: GroupedTabs): void {
           type: 'automatic',
           autoGroupStrategy: 'domain',
           createdAt: Date.now(),
-          favicon: tab.favIconUrl,
+          favicon: getTabFaviconUrl(tab.url),
         };
       }
       groups[groupKey].tabs.push(tab);
@@ -201,7 +203,7 @@ function groupByDomain(tabs: TabInfo[], groups: GroupedTabs): void {
           type: 'automatic',
           autoGroupStrategy: 'domain',
           createdAt: Date.now(),
-          favicon: tab.favIconUrl,
+          favicon: getTabFaviconUrl(tab.url),
         };
       }
       groups[groupKey].tabs.push(tab);
@@ -245,7 +247,7 @@ function groupByContentSimilarity(tabs: TabInfo[], groups: GroupedTabs): void {
         type: 'automatic',
         autoGroupStrategy: 'content-similarity',
         createdAt: Date.now(),
-        favicon: tab.favIconUrl,
+        favicon: getTabFaviconUrl(tab.url),
       };
     }
     groups[groupKey].tabs.push(tab);
@@ -311,7 +313,7 @@ function groupByActivityPattern(tabs: TabInfo[], groups: GroupedTabs): void {
         type: 'automatic',
         autoGroupStrategy: 'activity-pattern',
         createdAt: Date.now(),
-        favicon: tab.favIconUrl,
+        favicon: getTabFaviconUrl(tab.url),
       };
     }
     groups[groupKey].tabs.push(tab);
@@ -358,7 +360,7 @@ function groupByProjectContext(tabs: TabInfo[], groups: GroupedTabs): void {
       type: 'automatic',
       autoGroupStrategy: 'project-context',
       createdAt: Date.now(),
-      favicon: projectTabs[0]?.favIconUrl,
+      favicon: getTabFaviconUrl(projectTabs[0]?.url || ''),
     };
   });
 }
@@ -367,12 +369,14 @@ export function filterTabs(
   tabs: TabInfo[],
   query: string
 ): TabInfo[] {
-  const lowerQuery = query.toLowerCase();
-  return tabs.filter(
-    (tab) =>
-      tab.title.toLowerCase().includes(lowerQuery) ||
-      tab.url.toLowerCase().includes(lowerQuery)
-  );
+  const trimmed = query.trim();
+  if (!trimmed) return tabs;
+
+  return tabs
+    .map((tab) => ({ tab, score: scoreTab(tab, trimmed) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(({ tab }) => tab);
 }
 
 /**

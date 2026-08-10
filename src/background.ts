@@ -7,8 +7,8 @@ import {
   removeTabActivity,
   cleanupOldActivity,
   getActivityData,
-  type ActivityData,
-} from './lib/activity-utils';
+} from './lib/activity-storage';
+import type { ActivityData } from './lib/activity-types';
 
 // Message types for communication between sidepanel and background
 export interface BackgroundMessage {
@@ -18,7 +18,7 @@ export interface BackgroundMessage {
 
 export interface TabUpdatePayload {
   tabId: number;
-  changeInfo: chrome.tabs.TabChangeInfo;
+  changeInfo: chrome.tabs.OnUpdatedInfo;
   tab: chrome.tabs.Tab;
 }
 

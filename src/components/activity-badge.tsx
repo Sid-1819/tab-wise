@@ -1,6 +1,7 @@
 import { Clock, Timer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { TabActivity, formatLastVisited, formatTimeSpent, getActivityColor } from '@/lib/activity-utils';
+import type { TabActivity } from '@/lib/activity-types';
+import { formatLastVisited, formatTimeSpent, getActivityColor } from '@/lib/activity-format';
 import { cn } from '@/lib/utils';
 
 interface ActivityBadgeProps {

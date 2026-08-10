@@ -14,13 +14,13 @@ import {
 import { THEME_PRESETS, useThemePreset } from '@/components/theme-provider';
 import { applyPresetWithTransition, applyThemeWithTransition, originFromElement } from '@/lib/theme-transition';
 import { cn } from '@/lib/utils';
+import { useIsClient } from '@/hooks/use-is-client';
 
 export function ThemeSwitcher() {
   const { setTheme, resolvedTheme } = useTheme();
   const { preset, setPreset } = useThemePreset();
-  const [mounted, setMounted] = React.useState(false);
+  const mounted = useIsClient();
   const [animating, setAnimating] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
 
   const isDark = mounted && resolvedTheme === 'dark';
 

@@ -14,6 +14,7 @@ import { RecentlyClosed } from '@/components/recently-closed';
 import { SavedSessions } from '@/components/saved-sessions';
 import { DuplicateBanner } from '@/components/duplicate-banner';
 import { SystemMemoryBar } from '@/components/system-memory-bar';
+import { useIsClient } from '@/hooks/use-is-client';
 import {
   findDuplicateClusters,
   pickKeeperTabId,
@@ -43,15 +44,14 @@ import {
   getGroupingSettings,
   saveGroupingSettings,
 } from '@/lib/group-storage';
+import { getTabFaviconUrl } from '@/lib/favicon';
 import { useToast } from '@/components/ui/use-toast';
 
 const FEEDBACK_URL = 'https://form.encatch.com/s/51cdd46c-4f2a-4d21-9e3d-5207b56f6ee5';
 
 function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCount: number }) {
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsClient();
 
   const logoSrc =
     mounted && resolvedTheme === 'dark'
@@ -74,6 +74,7 @@ function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCo
 
 export function SidePanel() {
   const prevDuplicateSigRef = useRef<string>('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [duplicateDismissSig, setDuplicateDismissSig] = useState<string | null>(null);
 
   const [tabs, setTabs] = useState<TabInfo[]>([]);
@@ -100,7 +101,7 @@ export function SidePanel() {
         id: tab.id!,
         title: tab.title || '',
         url: tab.url || '',
-        favIconUrl: tab.favIconUrl,
+        favIconUrl: getTabFaviconUrl(tab.url || ''),
         active: tab.active,
         windowId: tab.windowId,
         index: tab.index,
@@ -111,32 +112,34 @@ export function SidePanel() {
     });
   }, []);
 
-  const loadCustomGroups = async () => {
+  const loadCustomGroups = useCallback(async () => {
     const groups = await getCustomGroups();
     setCustomGroups(groups);
     const important = await getImportantGroups();
     setImportantGroups(important);
-  };
+  }, []);
 
-  const loadGroupingSettings = async () => {
+  const loadGroupingSettings = useCallback(async () => {
     const settings = await getGroupingSettings();
     setAutoGroupStrategy(settings.autoGroupStrategies[0] || 'domain');
     setEnableAutoGrouping(settings.enableAutoGrouping);
     setLastUsedInterval(settings.lastUsedInterval || 1);
     setEnableAutoDelete(settings.enableAutoDeleteGrouping || false);
     setAutoDeleteThreshold(settings.autoDeleteThreshold || 24 * 60 * 60 * 1000);
-  };
+  }, []);
 
-  const loadImportantTabs = async () => {
+  const loadImportantTabs = useCallback(async () => {
     const tabs = await getImportantTabs();
     setImportantTabs(tabs);
-  };
+  }, []);
 
   useEffect(() => {
-    loadTabs();
-    loadCustomGroups();
-    loadGroupingSettings();
-    loadImportantTabs();
+    const timeoutId = window.setTimeout(() => {
+      loadTabs();
+      void loadCustomGroups();
+      void loadGroupingSettings();
+      void loadImportantTabs();
+    }, 0);
 
     const handleMessage = (message: { action: string; payload?: unknown }) => {
       if (message.action === 'tabsUpdated') {
@@ -147,21 +150,46 @@ export function SidePanel() {
     chrome.runtime.onMessage.addListener(handleMessage);
 
     return () => {
+      window.clearTimeout(timeoutId);
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
-  }, [loadTabs]);
+  }, [loadTabs, loadCustomGroups, loadGroupingSettings, loadImportantTabs]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const isTypingElsewhere =
+        target.isContentEditable ||
+        target.tagName === 'TEXTAREA' ||
+        (target.tagName === 'INPUT' && target !== searchInputRef.current);
+
+      if (isTypingElsewhere) return;
+
+      const isSlash =
+        event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey;
+
+      if (!isSlash) return;
+
+      event.preventDefault();
+      searchInputRef.current?.focus();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Clean up dead tabs from groups when tabs change
   useEffect(() => {
-    if (tabs.length > 0) {
-      const activeTabIds = tabs.map((t) => t.id);
-      cleanupDeadTabs(activeTabIds).then(() => {
-        loadCustomGroups();
-      });
-      // Reload important tabs to sync with current tabs
-      loadImportantTabs();
-    }
-  }, [tabs]);
+    if (tabs.length === 0) return;
+
+    const activeTabIds = tabs.map((t) => t.id);
+    void cleanupDeadTabs(activeTabIds).then(() => {
+      void loadCustomGroups();
+      void loadImportantTabs();
+    });
+  }, [tabs, loadCustomGroups, loadImportantTabs]);
 
   // Use activity monitoring hook
   const { tabsWithActivity, updateActivity } = useActivityMonitor({
@@ -498,7 +526,7 @@ export function SidePanel() {
 
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className="shrink-0">
-          <SearchBar value={searchQuery} onChange={setSearchQuery} />
+          <SearchBar ref={searchInputRef} value={searchQuery} onChange={setSearchQuery} />
 
           <div className="mb-2 flex items-center gap-1 overflow-x-auto">
             <SavedSessions onRestored={loadTabs} />
@@ -536,7 +564,7 @@ export function SidePanel() {
         </div>
 
         <ScrollArea className="flex-1 min-h-0">
-          <div className="space-y-2.5 py-1 pr-1">
+          <div className="space-y-1 py-0.5 pr-1">
             {allGroups.map((group) => (
               <TabGroupCard
                 key={group.id}

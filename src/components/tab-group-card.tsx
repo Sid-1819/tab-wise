@@ -7,6 +7,8 @@ import { TabGroup, CustomGroupConfig } from '@/types/tab';
 import { TabItem } from '@/components/tab-item';
 import { getGroupBorderColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
+import { DEFAULT_FAVICON } from '@/lib/favicon';
+import { useCurrentTime } from '@/hooks/use-current-time';
 
 interface TabGroupCardProps {
   group: TabGroup;
@@ -25,8 +27,6 @@ interface TabGroupCardProps {
   onTogglePin?: (tabId: number) => void;
   customGroups?: CustomGroupConfig[];
 }
-
-const DEFAULT_FAVICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/></svg>';
 
 const groupActionBtn =
   'h-6 w-6 p-0 opacity-0 transition-opacity group-hover/card:opacity-100 focus-visible:opacity-100';
@@ -51,6 +51,7 @@ export function TabGroupCard({
   const isCustomGroup = group.type === 'custom';
   const isSingleAutoGroup = group.tabs.length === 1 && !isCustomGroup;
   const [collapsed, setCollapsed] = useState(false);
+  const now = useCurrentTime();
 
   const handleCloseAll = () => {
     const tabIds = group.tabs.map((tab) => tab.id);
@@ -66,7 +67,6 @@ export function TabGroupCard({
 
   const activeTabsInGroup = group.tabs.filter((tab) => {
     if (!tab.activity) return false;
-    const now = Date.now();
     return now - tab.activity.lastVisited < 30 * 60 * 1000;
   }).length;
 
@@ -93,7 +93,7 @@ export function TabGroupCard({
       className="group/card rounded-lg border border-l-[3px] border-hairline/70 shadow-none"
       style={groupBorderStyle}
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 py-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 py-1.5">
         <button
           type="button"
           className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
@@ -220,7 +220,7 @@ export function TabGroupCard({
         </div>
       </CardHeader>
       {!collapsed && (
-        <CardContent className="space-y-1 px-3 pb-3 pt-0 pr-5">
+        <CardContent className="space-y-0.5 px-3 pb-2 pt-0 pr-5">
           {group.tabs.length === 0 ? (
             <div className="py-4 text-center text-sm text-muted-foreground">
               No tabs in this group

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TabInfo } from '@/types/tab';
-import { ActivityData, TabActivity } from '@/lib/activity-utils';
+import type { ActivityData, TabActivity } from '@/lib/activity-types';
 
 interface UseActivityMonitorOptions {
   tabs: TabInfo[];
@@ -36,13 +36,15 @@ export function useActivityMonitor({
 
   // Periodic activity updates
   useEffect(() => {
-    updateActivity();
-
+    const timeoutId = window.setTimeout(() => void updateActivity(), 0);
     const interval = setInterval(() => {
-      updateActivity();
+      void updateActivity();
     }, refreshInterval);
 
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(timeoutId);
+      clearInterval(interval);
+    };
   }, [refreshInterval, updateActivity]);
 
   // Listen for tab updates to refresh activity
