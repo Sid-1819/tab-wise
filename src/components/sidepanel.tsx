@@ -74,6 +74,7 @@ function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCo
 
 export function SidePanel() {
   const prevDuplicateSigRef = useRef<string>('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [duplicateDismissSig, setDuplicateDismissSig] = useState<string | null>(null);
 
   const [tabs, setTabs] = useState<TabInfo[]>([]);
@@ -150,6 +151,31 @@ export function SidePanel() {
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
   }, [loadTabs]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const isTypingElsewhere =
+        target.isContentEditable ||
+        target.tagName === 'TEXTAREA' ||
+        (target.tagName === 'INPUT' && target !== searchInputRef.current);
+
+      if (isTypingElsewhere) return;
+
+      const isSlash =
+        event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey;
+
+      if (!isSlash) return;
+
+      event.preventDefault();
+      searchInputRef.current?.focus();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Clean up dead tabs from groups when tabs change
   useEffect(() => {
@@ -498,7 +524,7 @@ export function SidePanel() {
 
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className="shrink-0">
-          <SearchBar value={searchQuery} onChange={setSearchQuery} />
+          <SearchBar ref={searchInputRef} value={searchQuery} onChange={setSearchQuery} />
 
           <div className="mb-2 flex items-center gap-1 overflow-x-auto">
             <SavedSessions onRestored={loadTabs} />

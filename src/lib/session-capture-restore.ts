@@ -107,9 +107,11 @@ async function applyChromeGroups(
   for (const cg of session.chromeGroups) {
     const tabIds = keyToTabIds.get(cg.key);
     if (!tabIds?.length) continue;
+    const groupTabIds: number | [number, ...number[]] =
+      tabIds.length === 1 ? tabIds[0] : (tabIds as [number, ...number[]]);
     try {
       const groupId = await chrome.tabs.group({
-        tabIds,
+        tabIds: groupTabIds,
         createProperties: { windowId },
       });
       await chrome.tabGroups.update(groupId, {
@@ -140,7 +142,10 @@ export async function restoreNamedSession(
       url: restorable.map((t) => t.url),
       focused: true,
     });
-    const windowId = win.id!;
+    if (!win?.id) {
+      return { opened: 0, skipped: session.tabs.length };
+    }
+    const windowId = win.id;
     const tabsInWin = await chrome.tabs.query({ windowId });
     tabsInWin.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
 

@@ -7,7 +7,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { TabInfo, CustomGroupConfig } from '@/types/tab';
-import { TabActivity } from '@/lib/activity-utils';
+import type { TabActivity } from '@/lib/activity-types';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 

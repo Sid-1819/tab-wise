@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TabInfo } from '@/types/tab';
-import { ActivityData, TabActivity } from '@/lib/activity-utils';
+import type { ActivityData, TabActivity } from '@/lib/activity-types';
 
 interface UseActivityMonitorOptions {
   tabs: TabInfo[];

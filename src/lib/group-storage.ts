@@ -14,7 +14,7 @@ const STORAGE_KEYS = {
 export async function getCustomGroups(): Promise<CustomGroupConfig[]> {
   return new Promise((resolve) => {
     chrome.storage.local.get([STORAGE_KEYS.CUSTOM_GROUPS], (result) => {
-      resolve(result[STORAGE_KEYS.CUSTOM_GROUPS] || []);
+      resolve((result[STORAGE_KEYS.CUSTOM_GROUPS] as CustomGroupConfig[] | undefined) ?? []);
     });
   });
 }
@@ -110,7 +110,10 @@ export async function getImportantGroups(): Promise<string[]> {
 export async function getGroupingSettings(): Promise<GroupingSettings> {
   return new Promise((resolve) => {
     chrome.storage.local.get([STORAGE_KEYS.GROUPING_SETTINGS], (result) => {
-      resolve(result[STORAGE_KEYS.GROUPING_SETTINGS] || DEFAULT_GROUPING_SETTINGS);
+      resolve(
+        (result[STORAGE_KEYS.GROUPING_SETTINGS] as GroupingSettings | undefined) ??
+          DEFAULT_GROUPING_SETTINGS
+      );
     });
   });
 }

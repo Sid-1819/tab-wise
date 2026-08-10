@@ -3,7 +3,7 @@ export interface SavedSessionChromeGroup {
   /** Stable key referenced by SavedSessionTab.chromeGroupKey */
   key: string;
   title?: string;
-  color?: chrome.tabGroups.ColorEnum;
+  color?: `${chrome.tabGroups.Color}`;
   collapsed?: boolean;
 }
 
