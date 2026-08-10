@@ -14,6 +14,7 @@ import { RecentlyClosed } from '@/components/recently-closed';
 import { SavedSessions } from '@/components/saved-sessions';
 import { DuplicateBanner } from '@/components/duplicate-banner';
 import { SystemMemoryBar } from '@/components/system-memory-bar';
+import { useIsClient } from '@/hooks/use-is-client';
 import {
   findDuplicateClusters,
   pickKeeperTabId,
@@ -50,9 +51,7 @@ const FEEDBACK_URL = 'https://form.encatch.com/s/51cdd46c-4f2a-4d21-9e3d-5207b56
 
 function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCount: number }) {
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsClient();
 
   const logoSrc =
     mounted && resolvedTheme === 'dark'
@@ -113,32 +112,34 @@ export function SidePanel() {
     });
   }, []);
 
-  const loadCustomGroups = async () => {
+  const loadCustomGroups = useCallback(async () => {
     const groups = await getCustomGroups();
     setCustomGroups(groups);
     const important = await getImportantGroups();
     setImportantGroups(important);
-  };
+  }, []);
 
-  const loadGroupingSettings = async () => {
+  const loadGroupingSettings = useCallback(async () => {
     const settings = await getGroupingSettings();
     setAutoGroupStrategy(settings.autoGroupStrategies[0] || 'domain');
     setEnableAutoGrouping(settings.enableAutoGrouping);
     setLastUsedInterval(settings.lastUsedInterval || 1);
     setEnableAutoDelete(settings.enableAutoDeleteGrouping || false);
     setAutoDeleteThreshold(settings.autoDeleteThreshold || 24 * 60 * 60 * 1000);
-  };
+  }, []);
 
-  const loadImportantTabs = async () => {
+  const loadImportantTabs = useCallback(async () => {
     const tabs = await getImportantTabs();
     setImportantTabs(tabs);
-  };
+  }, []);
 
   useEffect(() => {
-    loadTabs();
-    loadCustomGroups();
-    loadGroupingSettings();
-    loadImportantTabs();
+    const timeoutId = window.setTimeout(() => {
+      loadTabs();
+      void loadCustomGroups();
+      void loadGroupingSettings();
+      void loadImportantTabs();
+    }, 0);
 
     const handleMessage = (message: { action: string; payload?: unknown }) => {
       if (message.action === 'tabsUpdated') {
@@ -149,9 +150,10 @@ export function SidePanel() {
     chrome.runtime.onMessage.addListener(handleMessage);
 
     return () => {
+      window.clearTimeout(timeoutId);
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
-  }, [loadTabs]);
+  }, [loadTabs, loadCustomGroups, loadGroupingSettings, loadImportantTabs]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -180,15 +182,14 @@ export function SidePanel() {
 
   // Clean up dead tabs from groups when tabs change
   useEffect(() => {
-    if (tabs.length > 0) {
-      const activeTabIds = tabs.map((t) => t.id);
-      cleanupDeadTabs(activeTabIds).then(() => {
-        loadCustomGroups();
-      });
-      // Reload important tabs to sync with current tabs
-      loadImportantTabs();
-    }
-  }, [tabs]);
+    if (tabs.length === 0) return;
+
+    const activeTabIds = tabs.map((t) => t.id);
+    void cleanupDeadTabs(activeTabIds).then(() => {
+      void loadCustomGroups();
+      void loadImportantTabs();
+    });
+  }, [tabs, loadCustomGroups, loadImportantTabs]);
 
   // Use activity monitoring hook
   const { tabsWithActivity, updateActivity } = useActivityMonitor({

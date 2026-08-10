@@ -14,6 +14,7 @@ import {
   deleteNamedSession,
   generateSessionId,
   getNamedSessions,
+  renameNamedSession,
   upsertNamedSession,
 } from '@/lib/session-storage';
 import {
@@ -162,7 +163,7 @@ export function SavedSessions({ onRestored }: { onRestored?: () => void }) {
     const trimmed = editName.trim();
     setEditingId(null);
     if (!trimmed || trimmed === s.name) return;
-    await upsertNamedSession({ ...s, name: trimmed, updatedAt: Date.now() });
+    await renameNamedSession(s, trimmed);
     refresh();
     toast({ title: 'Renamed', description: `"${trimmed}"` });
   };

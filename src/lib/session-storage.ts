@@ -34,6 +34,13 @@ export async function deleteNamedSession(id: string): Promise<void> {
   await saveNamedSessions(sessions);
 }
 
+export async function renameNamedSession(
+  session: NamedSession,
+  name: string,
+): Promise<void> {
+  await upsertNamedSession({ ...session, name, updatedAt: Date.now() });
+}
+
 export function generateSessionId(): string {
   return `session_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }

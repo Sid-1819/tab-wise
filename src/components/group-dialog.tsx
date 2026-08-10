@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -23,25 +23,23 @@ interface GroupDialogProps {
   allGroups?: CustomGroupConfig[];
 }
 
-export function GroupDialog({
-  open,
-  onOpenChange,
-  onSave,
-  editingGroup,
-  selectedTabs = [],
-}: GroupDialogProps) {
-  const [name, setName] = useState('');
-  const [color, setColor] = useState(GROUP_COLORS[0]);
+interface GroupDialogFormProps {
+  editingGroup?: CustomGroupConfig;
+  selectedTabs: TabInfo[];
+  onSave: (group: CustomGroupConfig) => void;
+  onOpenChange: (open: boolean) => void;
+}
 
-  useEffect(() => {
-    if (editingGroup) {
-      setName(editingGroup.name);
-      setColor(editingGroup.color);
-    } else {
-      setName('');
-      setColor(GROUP_COLORS[Math.floor(Math.random() * GROUP_COLORS.length)]);
-    }
-  }, [editingGroup, open]);
+function GroupDialogForm({
+  editingGroup,
+  selectedTabs,
+  onSave,
+  onOpenChange,
+}: GroupDialogFormProps) {
+  const [name, setName] = useState(() => editingGroup?.name ?? '');
+  const [color, setColor] = useState(
+    () => editingGroup?.color ?? GROUP_COLORS[Math.floor(Math.random() * GROUP_COLORS.length)],
+  );
 
   const handleSave = () => {
     const tabIds = editingGroup
@@ -63,47 +61,67 @@ export function GroupDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>
-            {editingGroup ? 'Edit Group' : 'Create Custom Group'}
-          </DialogTitle>
-          <DialogDescription>
-            {editingGroup
-              ? 'Update the group name and color.'
-              : selectedTabs.length > 0
+    <>
+      <DialogHeader>
+        <DialogTitle>
+          {editingGroup ? 'Edit Group' : 'Create Custom Group'}
+        </DialogTitle>
+        <DialogDescription>
+          {editingGroup
+            ? 'Update the group name and color.'
+            : selectedTabs.length > 0
               ? `Create a custom group with ${selectedTabs.length} selected tab(s).`
               : 'Create an empty custom group. Add tabs using the menu on each tab.'}
-          </DialogDescription>
-        </DialogHeader>
+        </DialogDescription>
+      </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Group Name</Label>
-            <Input
-              id="name"
-              placeholder="Enter group name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Group Color</Label>
-            <ColorPicker selectedColor={color} onColorSelect={setColor} />
-          </div>
+      <div className="grid gap-4 py-4">
+        <div className="grid gap-2">
+          <Label htmlFor="name">Group Name</Label>
+          <Input
+            id="name"
+            placeholder="Enter group name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={!name.trim()}>
-            {editingGroup ? 'Update' : 'Create'}
-          </Button>
-        </DialogFooter>
+        <div className="grid gap-2">
+          <Label>Group Color</Label>
+          <ColorPicker selectedColor={color} onColorSelect={setColor} />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} disabled={!name.trim()}>
+          {editingGroup ? 'Update' : 'Create'}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+export function GroupDialog({
+  open,
+  onOpenChange,
+  onSave,
+  editingGroup,
+  selectedTabs = [],
+}: GroupDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <GroupDialogForm
+          key={`${editingGroup?.id ?? 'new'}-${open}`}
+          editingGroup={editingGroup}
+          selectedTabs={selectedTabs}
+          onSave={onSave}
+          onOpenChange={onOpenChange}
+        />
       </DialogContent>
     </Dialog>
   );

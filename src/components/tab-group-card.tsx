@@ -8,6 +8,7 @@ import { TabItem } from '@/components/tab-item';
 import { getGroupBorderColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
 import { DEFAULT_FAVICON } from '@/lib/favicon';
+import { useCurrentTime } from '@/hooks/use-current-time';
 
 interface TabGroupCardProps {
   group: TabGroup;
@@ -50,6 +51,7 @@ export function TabGroupCard({
   const isCustomGroup = group.type === 'custom';
   const isSingleAutoGroup = group.tabs.length === 1 && !isCustomGroup;
   const [collapsed, setCollapsed] = useState(false);
+  const now = useCurrentTime();
 
   const handleCloseAll = () => {
     const tabIds = group.tabs.map((tab) => tab.id);
@@ -65,7 +67,6 @@ export function TabGroupCard({
 
   const activeTabsInGroup = group.tabs.filter((tab) => {
     if (!tab.activity) return false;
-    const now = Date.now();
     return now - tab.activity.lastVisited < 30 * 60 * 1000;
   }).length;
 

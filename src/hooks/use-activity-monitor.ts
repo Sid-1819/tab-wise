@@ -36,13 +36,15 @@ export function useActivityMonitor({
 
   // Periodic activity updates
   useEffect(() => {
-    updateActivity();
-
+    const timeoutId = window.setTimeout(() => void updateActivity(), 0);
     const interval = setInterval(() => {
-      updateActivity();
+      void updateActivity();
     }, refreshInterval);
 
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(timeoutId);
+      clearInterval(interval);
+    };
   }, [refreshInterval, updateActivity]);
 
   // Listen for tab updates to refresh activity
