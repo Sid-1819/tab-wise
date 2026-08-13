@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useTheme } from 'next-themes';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Plus } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SearchBar } from '@/components/search-bar';
 import { TabGroupCard } from '@/components/tab-group-card';
@@ -280,6 +280,23 @@ export function SidePanel() {
           title: 'Tab Duplicated',
           description: 'Tab has been duplicated successfully.',
         });
+      }
+    });
+  };
+
+  const handleCreateNewTab = () => {
+    chrome.tabs.create({}, (newTab) => {
+      if (chrome.runtime.lastError) {
+        toast({
+          title: 'Error',
+          description: 'Failed to create new tab. ' + chrome.runtime.lastError.message,
+          variant: 'destructive',
+        });
+      } else {
+        loadTabs();
+        if (newTab?.id) {
+          handleTabClick(newTab.id);
+        }
       }
     });
   };
@@ -565,6 +582,18 @@ export function SidePanel() {
 
         <ScrollArea className="flex-1 min-h-0">
           <div className="space-y-1 py-0.5 pr-1">
+            <button
+              type="button"
+              onClick={handleCreateNewTab}
+              aria-label="New tab"
+              title="New tab"
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-current">
+                <Plus className="h-2.5 w-2.5" aria-hidden />
+              </span>
+              New tab
+            </button>
             {allGroups.map((group) => (
               <TabGroupCard
                 key={group.id}
