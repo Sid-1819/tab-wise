@@ -41,7 +41,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.3",
+    "eslint-plugin-react-refresh": "^0.5.4",
     "oxlint": "^1.77.0",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.1.17",
