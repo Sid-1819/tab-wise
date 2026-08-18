@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Wise",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Organize and manage your Chrome tabs efficiently with a modern React interface",
   "permissions": ["tabs", "tabGroups", "storage", "sidePanel", "contextMenus", "sessions", "favicon"],
   "optional_permissions": ["system.memory"],
