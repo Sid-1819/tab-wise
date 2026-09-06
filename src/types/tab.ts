@@ -22,10 +22,19 @@ export interface TabInfo {
 export type GroupType = 'automatic' | 'custom';
 export type AutoGroupStrategy = 'domain' | 'content-similarity' | 'time-of-day' | 'activity-pattern' | 'project-context' | 'last-used';
 
+export interface TabSubGroup {
+  id: string;
+  label: string;
+  hostname: string;
+  tabs: TabInfo[];
+  favicon?: string;
+}
+
 export interface TabGroup {
   id: string; // Unique identifier for the group
   domain: string;
   tabs: TabInfo[];
+  subgroups?: TabSubGroup[];
   favicon?: string;
 
   // Custom grouping features

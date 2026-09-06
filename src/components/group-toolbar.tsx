@@ -21,6 +21,8 @@ interface GroupToolbarProps {
   onToggleAutoDelete?: (enabled: boolean) => void;
   autoDeleteThreshold?: number;
   onAutoDeleteThresholdChange?: (threshold: number) => void;
+  showNestedGroups?: boolean;
+  onShowNestedGroupsChange?: (enabled: boolean) => void;
 }
 
 const STRATEGY_LABELS: Record<AutoGroupStrategy, string> = {
@@ -44,6 +46,8 @@ export function GroupToolbar({
   onToggleAutoDelete,
   autoDeleteThreshold = 24 * 60 * 60 * 1000,
   onAutoDeleteThresholdChange,
+  showNestedGroups = true,
+  onShowNestedGroupsChange,
 }: GroupToolbarProps) {
   return (
     <>
@@ -138,6 +142,22 @@ export function GroupToolbar({
                       <option value={3}>3 hours</option>
                       <option value={4}>4 hours</option>
                     </select>
+                  </div>
+                )}
+
+                {autoGroupStrategy === 'domain' && onShowNestedGroupsChange && (
+                  <div className="flex items-center justify-between mt-2">
+                    <Label htmlFor="nested-groups" className="flex flex-col gap-1">
+                      <span>Nest by subdomain</span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        Group different hostnames inside the same domain
+                      </span>
+                    </Label>
+                    <Switch
+                      id="nested-groups"
+                      checked={showNestedGroups}
+                      onCheckedChange={onShowNestedGroupsChange}
+                    />
                   </div>
                 )}
               </div>
