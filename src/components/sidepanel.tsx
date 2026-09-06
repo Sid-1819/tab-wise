@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useTheme } from 'next-themes';
-import { MessageSquare, Plus } from 'lucide-react';
+import { MessageSquare, Plus, BarChart2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SearchBar } from '@/components/search-bar';
 import { TabGroupCard } from '@/components/tab-group-card';
@@ -45,6 +45,7 @@ import {
   saveGroupingSettings,
 } from '@/lib/group-storage';
 import { getTabFaviconUrl } from '@/lib/favicon';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
 const FEEDBACK_URL = 'https://form.encatch.com/s/51cdd46c-4f2a-4d21-9e3d-5207b56f6ee5';
@@ -87,6 +88,7 @@ export function SidePanel() {
   const [lastUsedInterval, setLastUsedInterval] = useState(1);
   const [enableAutoDelete, setEnableAutoDelete] = useState(false);
   const [autoDeleteThreshold, setAutoDeleteThreshold] = useState(24 * 60 * 60 * 1000);
+  const [showNestedGroups, setShowNestedGroups] = useState(true);
   const [importantTabs, setImportantTabs] = useState<number[]>([]);
   const [importantGroups, setImportantGroups] = useState<string[]>([]);
   const [showGroupDialog, setShowGroupDialog] = useState(false);
@@ -126,6 +128,7 @@ export function SidePanel() {
     setLastUsedInterval(settings.lastUsedInterval || 1);
     setEnableAutoDelete(settings.enableAutoDeleteGrouping || false);
     setAutoDeleteThreshold(settings.autoDeleteThreshold || 24 * 60 * 60 * 1000);
+    setShowNestedGroups(settings.showNestedGroups ?? true);
   }, []);
 
   const loadImportantTabs = useCallback(async () => {
@@ -212,7 +215,8 @@ export function SidePanel() {
       importantGroups,
       lastUsedInterval,
       enableAutoDelete,
-      autoDeleteThreshold
+      autoDeleteThreshold,
+      showNestedGroups
     );
   }, [
     filteredTabs,
@@ -224,6 +228,7 @@ export function SidePanel() {
     lastUsedInterval,
     enableAutoDelete,
     autoDeleteThreshold,
+    showNestedGroups,
   ]);
 
   const handleCloseTab = (tabId: number) => {
@@ -395,6 +400,12 @@ export function SidePanel() {
     await saveGroupingSettings({ ...settings, autoDeleteThreshold: threshold });
   };
 
+  const handleShowNestedGroupsChange = async (enabled: boolean) => {
+    setShowNestedGroups(enabled);
+    const settings = await getGroupingSettings();
+    await saveGroupingSettings({ ...settings, showNestedGroups: enabled });
+  };
+
   const handleAddTabToGroup = async (tabId: number, groupId: string) => {
     await addTabToGroup(groupId, tabId);
     await loadCustomGroups();
@@ -513,8 +524,8 @@ export function SidePanel() {
   }, [duplicateClusters, tabs, toast, loadTabs, updateActivity]);
 
   return (
-    <div className="w-full min-w-0 h-screen flex flex-col overflow-hidden p-3 bg-background box-border">
-      <header className="mb-2 flex shrink-0 items-center justify-between gap-2 border-b border-hairline/70 bg-background/80 pb-2 backdrop-blur-md">
+    <div className="w-full min-w-0 h-screen flex flex-col overflow-hidden p-2 bg-background box-border">
+      <header className="mb-1.5 flex shrink-0 items-center justify-between gap-1.5 border-b border-hairline/70 bg-background/80 pb-1.5 backdrop-blur-md">
         <SidePanelWordmark tabCount={filteredTabs.length} groupCount={totalGroups} />
         <div className="flex shrink-0 items-center gap-0.5">
           <Button
@@ -531,11 +542,12 @@ export function SidePanel() {
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-xs"
-            aria-label={showActivity ? 'Hide activity & RAM' : 'Show activity & RAM'}
+            className="h-7 w-7 p-0"
+            aria-label={showActivity ? 'Hide activity stats' : 'Show activity stats'}
+            title={showActivity ? 'Hide activity stats' : 'Show activity stats'}
             onClick={() => setShowActivity(!showActivity)}
           >
-            {showActivity ? 'Hide' : 'Activity'}
+            <BarChart2 className={cn('h-3.5 w-3.5', showActivity && 'text-primary')} />
           </Button>
           <ThemeSwitcher />
         </div>
@@ -560,6 +572,8 @@ export function SidePanel() {
               onToggleAutoDelete={handleAutoDeleteToggle}
               autoDeleteThreshold={autoDeleteThreshold}
               onAutoDeleteThresholdChange={handleAutoDeleteThresholdChange}
+              showNestedGroups={showNestedGroups}
+              onShowNestedGroupsChange={handleShowNestedGroupsChange}
             />
           </div>
 
@@ -581,7 +595,7 @@ export function SidePanel() {
         </div>
 
         <ScrollArea className="flex-1 min-h-0">
-          <div className="space-y-1 py-0.5 pr-1">
+          <div className="min-w-0 space-y-1 py-0.5">
             <button
               type="button"
               onClick={handleCreateNewTab}

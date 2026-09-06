@@ -1,6 +1,5 @@
 import { X, MoreVertical, FolderPlus, FolderMinus, Copy, Shield, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ActivityBadge } from '@/components/activity-badge';
 import {
   Popover,
   PopoverContent,
@@ -33,7 +32,6 @@ export function TabItem({
   tab,
   onClose,
   onClick,
-  showActivity = true,
   customGroups = [],
   onAddToGroup,
   onRemoveFromGroup,
@@ -43,10 +41,6 @@ export function TabItem({
   nestedInGroup = false,
 }: TabItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const truncatedTitle = tab.title.length > 35
-    ? tab.title.slice(0, 35) + '...'
-    : tab.title;
 
   // Find which group this tab belongs to (if any)
   const tabInGroup = customGroups.find((g) => g.tabIds.includes(tab.id));
@@ -72,70 +66,78 @@ export function TabItem({
   // Check if this tab is currently active
   const isActive = tab.active === true;
 
+  const hasManageMenu =
+    customGroups.length > 0 ||
+    isInCustomGroup ||
+    !!onDuplicate ||
+    !!onToggleImportant ||
+    !!onTogglePin;
+
+  const tabActionBtn = 'h-5 w-5 shrink-0 p-0';
+
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-md transition-colors cursor-pointer group",
-        nestedInGroup ? "py-1 pl-2 pr-1" : "py-1 px-2",
-        "hover:bg-accent",
-        isActive && !nestedInGroup && "bg-primary/10 border-l-2 border-primary",
-        isActive && nestedInGroup && "bg-primary/10"
+        'group grid min-w-0 cursor-pointer items-center gap-1 rounded-md transition-colors',
+        'grid-cols-[16px_minmax(0,1fr)_auto]',
+        nestedInGroup ? 'py-1 pl-2 pr-0.5' : 'py-1 px-2',
+        'hover:bg-accent',
+        isActive && !nestedInGroup && 'border-l-2 border-primary bg-primary/10',
+        isActive && nestedInGroup && 'bg-primary/10'
       )}
       onClick={() => onClick(tab.id)}
     >
       <img
         src={tab.favIconUrl || DEFAULT_FAVICON}
         alt=""
-        className="w-4 h-4 shrink-0"
+        className="h-4 w-4 shrink-0"
         onError={(e) => {
           e.currentTarget.src = DEFAULT_FAVICON;
         }}
       />
-      <span className={cn(
-        "flex-1 truncate text-xs",
-        isActive ? "font-medium text-primary" : "font-normal text-foreground/90"
-      )}>
-        {truncatedTitle}
-      </span>
+      <div className="min-w-0 overflow-hidden">
+        <span
+          className={cn(
+            'block truncate text-xs',
+            isActive ? 'font-medium text-primary' : 'font-normal text-foreground/90'
+          )}
+          title={tab.title}
+        >
+          {tab.title}
+        </span>
+      </div>
 
-      {showActivity && tab.activity && (
-        <ActivityBadge
-          activity={tab.activity}
-          showLastVisited={true}
-          showTimeSpent={false}
-          compact={true}
-        />
-      )}
+      <div
+        className={cn(
+          'relative z-10 flex shrink-0 items-center gap-0',
+          isActive && 'min-w-5'
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {tab.isImportant && (
+          <Shield className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500" aria-hidden />
+        )}
 
-      {tab.isImportant && (
-        <Shield className="h-4 w-4 fill-amber-500 text-amber-500 shrink-0" />
-      )}
+        {tab.pinned && (
+          <Pin className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
+        )}
 
-      {tab.pinned && (
-        <Pin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-      )}
-
-      {/* Group management menu */}
-      {(customGroups.length > 0 ||
-        isInCustomGroup ||
-        onDuplicate ||
-        onToggleImportant ||
-        onTogglePin) && (
-        <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-              aria-label={`Manage ${tab.title}`}
-              title="Manage tab"
-            >
-              <MoreVertical className="h-3 w-3" aria-hidden />
-            </Button>
-          </PopoverTrigger>
+        {hasManageMenu && (
+          <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  tabActionBtn,
+                  'w-0 overflow-hidden opacity-0 transition-all group-hover:w-5 group-hover:opacity-100 focus-visible:w-5 focus-visible:opacity-100'
+                )}
+                aria-label={`Manage ${tab.title}`}
+                title="Manage tab"
+              >
+                <MoreVertical className="h-3 w-3" aria-hidden />
+              </Button>
+            </PopoverTrigger>
           <PopoverContent className="w-48 p-1" align="end">
             <div className="text-xs font-medium text-muted-foreground px-2 py-1">
               Manage Tab
@@ -243,21 +245,23 @@ export function TabItem({
             )}
           </PopoverContent>
         </Popover>
-      )}
+        )}
 
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose(tab.id);
-        }}
-        aria-label={`Close ${tab.title}`}
-        title="Close tab"
-      >
-        <X className="h-3 w-3" aria-hidden />
-      </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            tabActionBtn,
+            'text-muted-foreground/80 hover:text-foreground',
+            !isActive && 'hidden group-hover:inline-flex'
+          )}
+          onClick={() => onClose(tab.id)}
+          aria-label={`Close ${tab.title}`}
+          title="Close tab"
+        >
+          <X className="h-3 w-3" aria-hidden />
+        </Button>
+      </div>
     </div>
   );
 }

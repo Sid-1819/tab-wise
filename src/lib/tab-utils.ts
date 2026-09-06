@@ -1,79 +1,22 @@
 import {
   TabInfo,
   GroupedTabs,
-  DomainMapping,
   AutoGroupStrategy,
   CustomGroupConfig,
   TabGroup,
+  TabSubGroup,
 } from '@/types/tab';
 import { scoreTab } from '@/lib/fuzzy-match';
 import { getTabFaviconUrl } from '@/lib/favicon';
+import {
+  getDomainGroupName,
+  getHostnameKey,
+  getSubGroupLabel,
+  getSubGroupSortKey,
+  prettifyDomain,
+} from '@/lib/domain-utils';
 
-const KNOWN_DOMAINS: DomainMapping = {
-  // Major platforms
-  'google.com': 'Google',
-  'youtube.com': 'YouTube',
-  'github.com': 'GitHub',
-  'stackoverflow.com': 'Stack Overflow',
-  'facebook.com': 'Facebook',
-  'twitter.com': 'Twitter',
-  'linkedin.com': 'LinkedIn',
-  'reddit.com': 'Reddit',
-  'amazon.com': 'Amazon',
-  'netflix.com': 'Netflix',
-  // Productivity & collaboration
-  'notion.so': 'Notion',
-  'figma.com': 'Figma',
-  'slack.com': 'Slack',
-  'discord.com': 'Discord',
-  'linear.app': 'Linear',
-  'trello.com': 'Trello',
-  'asana.com': 'Asana',
-  'clickup.com': 'ClickUp',
-  'miro.com': 'Miro',
-  'canva.com': 'Canva',
-  // Dev tools
-  'gitlab.com': 'GitLab',
-  'bitbucket.org': 'Bitbucket',
-  'vercel.com': 'Vercel',
-  'netlify.com': 'Netlify',
-  'heroku.com': 'Heroku',
-  'replit.com': 'Replit',
-  'codepen.io': 'CodePen',
-  'codesandbox.io': 'CodeSandbox',
-  // Communication
-  'zoom.us': 'Zoom',
-  'teams.microsoft.com': 'Microsoft Teams',
-  'meet.google.com': 'Google Meet',
-  'web.whatsapp.com': 'WhatsApp',
-  'telegram.org': 'Telegram',
-  // Media & content
-  'medium.com': 'Medium',
-  'dev.to': 'DEV Community',
-  'twitch.tv': 'Twitch',
-  'spotify.com': 'Spotify',
-  'pinterest.com': 'Pinterest',
-  'instagram.com': 'Instagram',
-  // Cloud & storage
-  'drive.google.com': 'Google Drive',
-  'dropbox.com': 'Dropbox',
-  'onedrive.live.com': 'OneDrive',
-  'icloud.com': 'iCloud',
-  // AI tools
-  'chat.openai.com': 'ChatGPT',
-  'claude.ai': 'Claude',
-  'huggingface.co': 'Hugging Face',
-};
-
-export function prettifyDomain(domain: string): string {
-  if (KNOWN_DOMAINS[domain]) {
-    return KNOWN_DOMAINS[domain];
-  }
-
-  const parts = domain.split('.');
-  const main = parts.length > 2 ? parts[parts.length - 2] : parts[0];
-  return main.charAt(0).toUpperCase() + main.slice(1);
-}
+export { prettifyDomain } from '@/lib/domain-utils';
 
 export function groupTabs(
   tabs: TabInfo[],
@@ -83,7 +26,8 @@ export function groupTabs(
   importantGroups: string[] = [],
   lastUsedInterval: number = 1,
   enableAutoDelete: boolean = false,
-  autoDeleteThreshold: number = 24 * 60 * 60 * 1000
+  autoDeleteThreshold: number = 24 * 60 * 60 * 1000,
+  showNestedGroups: boolean = true
 ): GroupedTabs {
   const groups: GroupedTabs = {};
 
@@ -116,7 +60,7 @@ export function groupTabs(
   const remainingTabs = tabs.filter((tab) => !tabsInCustomGroups.has(tab.id));
 
   if (strategy === 'domain') {
-    groupByDomain(remainingTabs, groups);
+    groupByDomain(remainingTabs, groups, showNestedGroups);
   } else if (strategy === 'content-similarity') {
     groupByContentSimilarity(remainingTabs, groups);
   } else if (strategy === 'time-of-day') {
@@ -164,7 +108,11 @@ export function groupTabs(
   return sortedGroups;
 }
 
-function groupByDomain(tabs: TabInfo[], groups: GroupedTabs): void {
+function groupByDomain(
+  tabs: TabInfo[],
+  groups: GroupedTabs,
+  showNestedGroups: boolean
+): void {
   tabs.forEach((tab) => {
     try {
       const url = new URL(tab.url);
@@ -175,8 +123,7 @@ function groupByDomain(tabs: TabInfo[], groups: GroupedTabs): void {
       } else if (url.protocol === 'file:') {
         groupName = 'Local Files';
       } else {
-        const rawDomain = url.hostname.replace(/^www\./, '');
-        groupName = prettifyDomain(rawDomain);
+        groupName = getDomainGroupName(url.hostname);
       }
 
       const groupKey = `auto_${groupName}`;
@@ -208,6 +155,54 @@ function groupByDomain(tabs: TabInfo[], groups: GroupedTabs): void {
       }
       groups[groupKey].tabs.push(tab);
     }
+  });
+
+  if (!showNestedGroups) return;
+
+  Object.values(groups).forEach((group) => {
+    if (group.type !== 'automatic' || group.autoGroupStrategy !== 'domain') {
+      return;
+    }
+
+    const hostnameBuckets = new Map<string, TabInfo[]>();
+    group.tabs.forEach((tab) => {
+      try {
+        const url = new URL(tab.url);
+        if (
+          url.protocol === 'chrome:' ||
+          url.protocol === 'chrome-extension:' ||
+          url.protocol === 'file:'
+        ) {
+          return;
+        }
+        const hostnameKey = getHostnameKey(url.hostname);
+        const bucket = hostnameBuckets.get(hostnameKey) ?? [];
+        bucket.push(tab);
+        hostnameBuckets.set(hostnameKey, bucket);
+      } catch {
+        // Invalid URLs stay in flat list only
+      }
+    });
+
+    if (hostnameBuckets.size < 2) return;
+
+    const subgroups: TabSubGroup[] = [...hostnameBuckets.entries()]
+      .map(([hostname, subgroupTabs]) => {
+        const label = getSubGroupLabel(hostname, group.domain);
+        return {
+          id: hostname,
+          label,
+          hostname,
+          tabs: subgroupTabs,
+          favicon: getTabFaviconUrl(subgroupTabs[0]?.url || ''),
+        };
+      })
+      .sort(
+        (a, b) =>
+          getSubGroupSortKey(a.label).localeCompare(getSubGroupSortKey(b.label))
+      );
+
+    group.subgroups = subgroups;
   });
 }
 

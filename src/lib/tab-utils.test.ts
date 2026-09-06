@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { filterTabs } from './tab-utils';
+vi.mock('@/lib/favicon', () => ({
+  getTabFaviconUrl: () => '',
+  DEFAULT_FAVICON: '',
+}));
+
+import { filterTabs, groupTabs } from './tab-utils';
 import type { TabInfo } from '@/types/tab';
 
 const tabs: TabInfo[] = [
@@ -8,6 +13,51 @@ const tabs: TabInfo[] = [
   { id: 2, title: 'Vitest Docs', url: 'https://vitest.dev/guide/' },
   { id: 3, title: 'Inbox', url: 'https://mail.example.com/' },
 ];
+
+const encatchTabs: TabInfo[] = [
+  { id: 10, title: 'Admin', url: 'https://admin.encatch.com/dashboard' },
+  { id: 11, title: 'Admin Settings', url: 'https://admin.encatch.com/settings' },
+  { id: 12, title: 'Infisical', url: 'https://infisical.encatch.com/secrets' },
+  { id: 13, title: 'Encatch Home', url: 'https://encatch.com/' },
+];
+
+describe('groupTabs domain nesting', () => {
+  it('creates subdomain subgroups when multiple hostnames share a domain', () => {
+    const grouped = groupTabs(encatchTabs, 'domain', [], [], [], 1, false, 24 * 60 * 60 * 1000, true);
+    const encatchGroup = grouped.auto_Encatch;
+
+    expect(encatchGroup).toBeDefined();
+    expect(encatchGroup.tabs).toHaveLength(4);
+    expect(encatchGroup.subgroups).toHaveLength(3);
+    expect(encatchGroup.subgroups?.map((sg) => sg.label).sort()).toEqual([
+      'Admin',
+      'Infisical',
+      'Root',
+    ]);
+  });
+
+  it('keeps a flat group when only one hostname is present', () => {
+    const grouped = groupTabs(
+      encatchTabs.filter((tab) => new URL(tab.url).hostname === 'admin.encatch.com'),
+      'domain',
+      [],
+      [],
+      [],
+      1,
+      false,
+      24 * 60 * 60 * 1000,
+      true
+    );
+
+    expect(grouped.auto_Encatch.subgroups).toBeUndefined();
+  });
+
+  it('does not nest when showNestedGroups is disabled', () => {
+    const grouped = groupTabs(encatchTabs, 'domain', [], [], [], 1, false, 24 * 60 * 60 * 1000, false);
+
+    expect(grouped.auto_Encatch.subgroups).toBeUndefined();
+  });
+});
 
 describe('filterTabs', () => {
   it('filters tabs by title case-insensitively', () => {
