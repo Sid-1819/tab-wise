@@ -38,7 +38,7 @@ describe('groupTabs domain nesting', () => {
 
   it('keeps a flat group when only one hostname is present', () => {
     const grouped = groupTabs(
-      encatchTabs.filter((tab) => tab.url.includes('admin.encatch.com')),
+      encatchTabs.filter((tab) => new URL(tab.url).hostname === 'admin.encatch.com'),
       'domain',
       [],
       [],
