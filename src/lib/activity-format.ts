@@ -74,3 +74,49 @@ export function isTabStale(tabId: number, threshold: number, activityData: Activ
   if (timeSince === null) return true;
   return timeSince > threshold;
 }
+
+export const STALE_THRESHOLD_OPTIONS = [
+  { label: '1d', ms: 1 * 24 * 60 * 60 * 1000 },
+  { label: '3d', ms: 3 * 24 * 60 * 60 * 1000 },
+  { label: '7d', ms: 7 * 24 * 60 * 60 * 1000 },
+  { label: '14d', ms: 14 * 24 * 60 * 60 * 1000 },
+] as const;
+
+export const DEFAULT_STALE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+
+export interface StaleTabInput {
+  id: number;
+  active?: boolean;
+  pinned?: boolean;
+  isImportant?: boolean;
+  lastAccessed?: number;
+  activity?: { lastVisited?: number };
+}
+
+/** Prefer a recorded visit. Fall back to Chrome's lastAccessed. Unknown usage is not stale. */
+export function lastUsedAt(tab: StaleTabInput): number | null {
+  if (tab.activity?.lastVisited) return tab.activity.lastVisited;
+  if (tab.lastAccessed) return tab.lastAccessed;
+  return null;
+}
+
+export function getStaleTabs<T extends StaleTabInput>(
+  tabs: T[],
+  thresholdMs: number,
+  importantGroupTabIds: ReadonlySet<number>,
+  now = Date.now()
+): T[] {
+  return tabs.filter((tab) => {
+    if (tab.active || tab.pinned || tab.isImportant) return false;
+    if (importantGroupTabIds.has(tab.id)) return false;
+    const used = lastUsedAt(tab);
+    if (used == null) return false;
+    return now - used > thresholdMs;
+  });
+}
+
+export function getDiscardCandidates<T extends StaleTabInput & { discarded?: boolean; audible?: boolean }>(
+  staleTabs: T[]
+): T[] {
+  return staleTabs.filter((tab) => !tab.discarded && !tab.audible);
+}

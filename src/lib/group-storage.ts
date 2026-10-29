@@ -3,13 +3,18 @@ import {
   GroupingSettings,
   DEFAULT_GROUPING_SETTINGS,
 } from '@/types/tab';
+import { DEFAULT_STALE_THRESHOLD_MS, STALE_THRESHOLD_OPTIONS } from '@/lib/activity-format';
 
 const STORAGE_KEYS = {
   CUSTOM_GROUPS: 'customGroups',
   GROUPING_SETTINGS: 'groupingSettings',
   IMPORTANT_TABS: 'importantTabs',
   IMPORTANT_GROUPS: 'importantGroups',
+  STALE_THRESHOLD: 'staleTabThresholdMs',
+  WINDOW_SCOPE: 'windowScope',
 } as const;
+
+export type WindowScope = 'all' | 'current';
 
 export async function getCustomGroups(): Promise<CustomGroupConfig[]> {
   return new Promise((resolve) => {
@@ -115,6 +120,36 @@ export async function getGroupingSettings(): Promise<GroupingSettings> {
           DEFAULT_GROUPING_SETTINGS
       );
     });
+  });
+}
+
+export async function getStaleThresholdMs(): Promise<number> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEYS.STALE_THRESHOLD], (result) => {
+      const value = result[STORAGE_KEYS.STALE_THRESHOLD];
+      const known = STALE_THRESHOLD_OPTIONS.some((option) => option.ms === value);
+      resolve(known ? (value as number) : DEFAULT_STALE_THRESHOLD_MS);
+    });
+  });
+}
+
+export async function saveStaleThresholdMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [STORAGE_KEYS.STALE_THRESHOLD]: ms }, () => resolve());
+  });
+}
+
+export async function getWindowScope(): Promise<WindowScope> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEYS.WINDOW_SCOPE], (result) => {
+      resolve(result[STORAGE_KEYS.WINDOW_SCOPE] === 'current' ? 'current' : 'all');
+    });
+  });
+}
+
+export async function saveWindowScope(scope: WindowScope): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [STORAGE_KEYS.WINDOW_SCOPE]: scope }, () => resolve());
   });
 }
 

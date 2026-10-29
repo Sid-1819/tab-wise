@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { RecentlyClosed } from '@/components/recently-closed';
 import { SavedSessions } from '@/components/saved-sessions';
 import { DuplicateBanner } from '@/components/duplicate-banner';
+import { StaleTabsBanner } from '@/components/stale-tabs-banner';
+import { WindowSection } from '@/components/window-section';
 import { SystemMemoryBar } from '@/components/system-memory-bar';
 import { useIsClient } from '@/hooks/use-is-client';
 import {
@@ -28,6 +30,8 @@ import {
   GROUP_COLORS,
 } from '@/types/tab';
 import { groupTabs, filterTabs } from '@/lib/tab-utils';
+import { DEFAULT_STALE_THRESHOLD_MS, getDiscardCandidates, getStaleTabs } from '@/lib/activity-format';
+import { moveTabToNewWindow, moveTabToWindow } from '@/lib/window-utils';
 import { useActivityMonitor } from '@/hooks/use-activity-monitor';
 import {
   getCustomGroups,
@@ -43,12 +47,17 @@ import {
   getImportantGroups,
   getGroupingSettings,
   saveGroupingSettings,
+  getStaleThresholdMs,
+  saveStaleThresholdMs,
+  getWindowScope,
+  saveWindowScope,
+  type WindowScope,
 } from '@/lib/group-storage';
 import { getTabFaviconUrl } from '@/lib/favicon';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
-const FEEDBACK_URL = 'https://form.encatch.com/s/51cdd46c-4f2a-4d21-9e3d-5207b56f6ee5';
+const FEEDBACK_URL = 'https://form.encatch.com/s/a29991a5-0c38-48c0-8fd8-61462f58821c';
 
 function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCount: number }) {
   const { resolvedTheme } = useTheme();
@@ -91,27 +100,44 @@ export function SidePanel() {
   const [showNestedGroups, setShowNestedGroups] = useState(true);
   const [importantTabs, setImportantTabs] = useState<number[]>([]);
   const [importantGroups, setImportantGroups] = useState<string[]>([]);
+  const [staleThresholdMs, setStaleThresholdMs] = useState(DEFAULT_STALE_THRESHOLD_MS);
+  const [windowScope, setWindowScope] = useState<WindowScope>('all');
+  const [currentWindowId, setCurrentWindowId] = useState<number | null>(null);
+  const [browserWindows, setBrowserWindows] = useState<{ id: number; focused: boolean }[]>([]);
+  const [collapsedWindows, setCollapsedWindows] = useState<number[]>([]);
   const [showGroupDialog, setShowGroupDialog] = useState(false);
   const [editingGroup, setEditingGroup] = useState<CustomGroupConfig | undefined>();
   const [tabsForNewGroup, setTabsForNewGroup] = useState<TabInfo[]>([]);
   const { toast } = useToast();
 
   const loadTabs = useCallback(async () => {
-    chrome.tabs.query({}, async (chromeTabs) => {
-      const important = await getImportantTabs();
-      const tabsInfo: TabInfo[] = chromeTabs.map((tab) => ({
-        id: tab.id!,
-        title: tab.title || '',
-        url: tab.url || '',
-        favIconUrl: getTabFaviconUrl(tab.url || ''),
-        active: tab.active,
-        windowId: tab.windowId,
-        index: tab.index,
-        pinned: tab.pinned,
-        isImportant: important.includes(tab.id!),
-      }));
-      setTabs(tabsInfo);
-    });
+    const [chromeTabs, chromeWindows, current] = await Promise.all([
+      chrome.tabs.query({}),
+      chrome.windows.getAll({ windowTypes: ['normal'] }),
+      chrome.windows.getCurrent(),
+    ]);
+    const important = await getImportantTabs();
+    const tabsInfo: TabInfo[] = chromeTabs.map((tab) => ({
+      id: tab.id!,
+      title: tab.title || '',
+      url: tab.url || '',
+      favIconUrl: getTabFaviconUrl(tab.url || ''),
+      active: tab.active,
+      windowId: tab.windowId,
+      index: tab.index,
+      pinned: tab.pinned,
+      discarded: tab.discarded,
+      audible: tab.audible,
+      lastAccessed: tab.lastAccessed,
+      isImportant: important.includes(tab.id!),
+    }));
+    setTabs(tabsInfo);
+    setBrowserWindows(
+      chromeWindows
+        .filter((win): win is chrome.windows.Window & { id: number } => win.id != null)
+        .map((win) => ({ id: win.id, focused: win.focused }))
+    );
+    if (current?.id != null) setCurrentWindowId(current.id);
   }, []);
 
   const loadCustomGroups = useCallback(async () => {
@@ -129,6 +155,8 @@ export function SidePanel() {
     setEnableAutoDelete(settings.enableAutoDeleteGrouping || false);
     setAutoDeleteThreshold(settings.autoDeleteThreshold || 24 * 60 * 60 * 1000);
     setShowNestedGroups(settings.showNestedGroups ?? true);
+    setStaleThresholdMs(await getStaleThresholdMs());
+    setWindowScope(await getWindowScope());
   }, []);
 
   const loadImportantTabs = useCallback(async () => {
@@ -151,10 +179,19 @@ export function SidePanel() {
     };
 
     chrome.runtime.onMessage.addListener(handleMessage);
+    const refreshWindows = () => {
+      void loadTabs();
+    };
+    chrome.windows.onCreated.addListener(refreshWindows);
+    chrome.windows.onRemoved.addListener(refreshWindows);
+    chrome.windows.onFocusChanged.addListener(refreshWindows);
 
     return () => {
       window.clearTimeout(timeoutId);
       chrome.runtime.onMessage.removeListener(handleMessage);
+      chrome.windows.onCreated.removeListener(refreshWindows);
+      chrome.windows.onRemoved.removeListener(refreshWindows);
+      chrome.windows.onFocusChanged.removeListener(refreshWindows);
     };
   }, [loadTabs, loadCustomGroups, loadGroupingSettings, loadImportantTabs]);
 
@@ -200,36 +237,45 @@ export function SidePanel() {
     refreshInterval: 10000, // 10 seconds
   });
 
-  const filteredTabs = useMemo(() => {
-    if (!searchQuery) return tabsWithActivity;
-    return filterTabs(tabsWithActivity, searchQuery);
-  }, [tabsWithActivity, searchQuery]);
+  const scopedTabs = useMemo(() => {
+    if (windowScope === 'current' && currentWindowId != null) {
+      return tabsWithActivity.filter((tab) => tab.windowId === currentWindowId);
+    }
+    return tabsWithActivity;
+  }, [tabsWithActivity, windowScope, currentWindowId]);
 
-  const groupedTabs: GroupedTabs = useMemo(() => {
-    const strategy = enableAutoGrouping ? autoGroupStrategy : 'domain';
-    return groupTabs(
-      filteredTabs,
-      strategy,
-      customGroups,
+  const filteredTabs = useMemo(() => {
+    if (!searchQuery) return scopedTabs;
+    return filterTabs(scopedTabs, searchQuery);
+  }, [scopedTabs, searchQuery]);
+
+  const buildGroups = useCallback(
+    (groupTabsSource: TabInfo[], groupsForCall: CustomGroupConfig[]) => {
+      const strategy = enableAutoGrouping ? autoGroupStrategy : 'domain';
+      const grouped: GroupedTabs = groupTabs(
+        groupTabsSource,
+        strategy,
+        groupsForCall,
+        importantTabs,
+        importantGroups,
+        lastUsedInterval,
+        enableAutoDelete,
+        autoDeleteThreshold,
+        showNestedGroups
+      );
+      return Object.values(grouped);
+    },
+    [
+      autoGroupStrategy,
+      enableAutoGrouping,
       importantTabs,
       importantGroups,
       lastUsedInterval,
       enableAutoDelete,
       autoDeleteThreshold,
-      showNestedGroups
-    );
-  }, [
-    filteredTabs,
-    autoGroupStrategy,
-    enableAutoGrouping,
-    customGroups,
-    importantTabs,
-    importantGroups,
-    lastUsedInterval,
-    enableAutoDelete,
-    autoDeleteThreshold,
-    showNestedGroups,
-  ]);
+      showNestedGroups,
+    ]
+  );
 
   const handleCloseTab = (tabId: number) => {
     chrome.tabs.remove(tabId, () => {
@@ -440,9 +486,103 @@ export function SidePanel() {
     setShowGroupDialog(true);
   };
 
-  const allGroups = useMemo(() => {
-    return Object.values(groupedTabs);
-  }, [groupedTabs]);
+  const orderedWindows = useMemo(() => {
+    return [...browserWindows].sort((a, b) => {
+      if (a.focused !== b.focused) return a.focused ? -1 : 1;
+      return a.id - b.id;
+    });
+  }, [browserWindows]);
+
+  const windowLabels = useMemo(() => {
+    const labels = new Map<number, string>();
+    orderedWindows.forEach((win, index) => {
+      const count = tabs.filter((tab) => tab.windowId === win.id).length;
+      labels.set(win.id, `Window ${index + 1} · ${count} tab${count === 1 ? '' : 's'}`);
+    });
+    return labels;
+  }, [orderedWindows, tabs]);
+
+  const moveTargets = useMemo(
+    () =>
+      orderedWindows.map((win) => ({
+        id: win.id,
+        label: windowLabels.get(win.id) ?? `Window ${win.id}`,
+      })),
+    [orderedWindows, windowLabels]
+  );
+
+  const sections = useMemo(() => {
+    const windowIds = [
+      ...new Set(
+        filteredTabs
+          .map((tab) => tab.windowId)
+          .filter((id): id is number => id != null)
+      ),
+    ];
+    const showHeaders = windowScope === 'all' && windowIds.length >= 2;
+    if (!showHeaders) {
+      return [
+        {
+          windowId: currentWindowId,
+          label: '',
+          tabCount: filteredTabs.length,
+          focused: true,
+          showHeader: false,
+          windowLabel: undefined as string | undefined,
+          groups: buildGroups(filteredTabs, customGroups),
+        },
+      ];
+    }
+
+    const openTabIds = new Set(tabs.map((tab) => tab.id));
+    const emptyCustomGroups = customGroups.filter(
+      (group) => !group.tabIds.some((id) => openTabIds.has(id))
+    );
+    const focusedWindowId =
+      orderedWindows.find((win) => win.focused)?.id ?? orderedWindows[0]?.id;
+    const knownWindowIds = new Set(orderedWindows.map((win) => win.id));
+    const sectionWindows = [
+      ...orderedWindows.filter((win) => windowIds.includes(win.id)),
+      ...windowIds
+        .filter((id) => !knownWindowIds.has(id))
+        .map((id) => ({ id, focused: false })),
+    ];
+
+    return sectionWindows.map((win) => {
+        const windowTabs = filteredTabs.filter((tab) => tab.windowId === win.id);
+        const groupsInWindow = customGroups.filter((group) =>
+          group.tabIds.some((id) => windowTabs.some((tab) => tab.id === id))
+        );
+        const groupsForWindow =
+          win.id === focusedWindowId
+            ? [...groupsInWindow, ...emptyCustomGroups]
+            : groupsInWindow;
+        const windowIndex = orderedWindows.findIndex((item) => item.id === win.id);
+        const label = windowIndex >= 0 ? `Window ${windowIndex + 1}` : 'Window';
+        return {
+          windowId: win.id,
+          label,
+          tabCount: windowTabs.length,
+          focused: win.focused,
+          showHeader: windowTabs.length > 1,
+          windowLabel: windowTabs.length === 1 ? label : undefined,
+          groups: buildGroups(windowTabs, groupsForWindow),
+        };
+      });
+  }, [
+    filteredTabs,
+    tabs,
+    windowScope,
+    currentWindowId,
+    orderedWindows,
+    customGroups,
+    buildGroups,
+  ]);
+
+  const allGroups = useMemo(
+    () => sections.flatMap((section) => section.groups),
+    [sections]
+  );
 
   // Match visible groups: custom groups + auto groups with 2+ tabs.
   // Single-tab auto groups render as flat tab rows, not group cards.
@@ -455,8 +595,8 @@ export function SidePanel() {
   );
 
   const duplicateClusters = useMemo(
-    () => findDuplicateClusters(tabs),
-    [tabs]
+    () => findDuplicateClusters(scopedTabs),
+    [scopedTabs]
   );
 
   const duplicateSignature = useMemo(
@@ -523,6 +663,144 @@ export function SidePanel() {
     });
   }, [duplicateClusters, tabs, toast, loadTabs, updateActivity]);
 
+  const importantGroupTabIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const group of customGroups) {
+      if (!group.isImportant) continue;
+      for (const id of group.tabIds) ids.add(id);
+    }
+    return ids;
+  }, [customGroups]);
+
+  const staleTabs = useMemo(
+    () => getStaleTabs(scopedTabs, staleThresholdMs, importantGroupTabIds),
+    [scopedTabs, staleThresholdMs, importantGroupTabIds]
+  );
+
+  const discardCandidates = useMemo(
+    () => getDiscardCandidates(staleTabs),
+    [staleTabs]
+  );
+
+  const handleStaleThresholdChange = async (ms: number) => {
+    setStaleThresholdMs(ms);
+    await saveStaleThresholdMs(ms);
+  };
+
+  const handleWindowScopeChange = async (scope: WindowScope) => {
+    setWindowScope(scope);
+    await saveWindowScope(scope);
+  };
+
+  const handleCloseStale = () => {
+    const ids = staleTabs.map((tab) => tab.id);
+    if (ids.length === 0) return;
+    chrome.tabs.remove(ids, () => {
+      if (chrome.runtime.lastError) {
+        toast({
+          title: 'Could not close tabs',
+          description: chrome.runtime.lastError.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+      loadTabs();
+      updateActivity();
+      toast({
+        title: 'Stale tabs closed',
+        description: `Closed ${ids.length} tab${ids.length === 1 ? '' : 's'}.`,
+      });
+    });
+  };
+
+  const handleDiscardStale = async () => {
+    const ids = discardCandidates.map((tab) => tab.id);
+    if (ids.length === 0) {
+      toast({
+        title: 'Nothing to sleep',
+        description: 'Those tabs are playing audio or already sleeping.',
+      });
+      return;
+    }
+    let discarded = 0;
+    for (const id of ids) {
+      try {
+        await chrome.tabs.discard(id);
+        discarded += 1;
+      } catch {
+        // Chrome refuses the active tab and some internal pages.
+      }
+    }
+    await loadTabs();
+    toast({
+      title: discarded > 0 ? 'Tabs sleeping' : 'Nothing discarded',
+      description:
+        discarded > 0
+          ? `Discarded ${discarded} tab${discarded === 1 ? '' : 's'}.`
+          : 'Chrome kept these tabs awake.',
+    });
+  };
+
+  const handleReloadTab = (tabId: number) => {
+    chrome.tabs.reload(tabId, () => {
+      if (chrome.runtime.lastError) {
+        toast({
+          title: 'Could not reload tab',
+          description: chrome.runtime.lastError.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+      loadTabs();
+    });
+  };
+
+  const handleMoveToWindow = async (tabId: number, windowId: number) => {
+    try {
+      await moveTabToWindow(tabId, windowId);
+      await loadTabs();
+    } catch (error) {
+      toast({
+        title: 'Could not move tab',
+        description: error instanceof Error ? error.message : 'Move failed.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleMoveToNewWindow = async (tabId: number) => {
+    try {
+      await moveTabToNewWindow(tabId);
+      await loadTabs();
+    } catch (error) {
+      toast({
+        title: 'Could not move tab',
+        description: error instanceof Error ? error.message : 'Move failed.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleFocusWindow = (windowId: number) => {
+    chrome.windows.update(windowId, { focused: true }, () => {
+      if (chrome.runtime.lastError) {
+        toast({
+          title: 'Could not focus window',
+          description: chrome.runtime.lastError.message,
+          variant: 'destructive',
+        });
+      }
+    });
+  };
+
+  const toggleWindowCollapsed = (windowId: number) => {
+    setCollapsedWindows((current) =>
+      current.includes(windowId)
+        ? current.filter((id) => id !== windowId)
+        : [...current, windowId]
+    );
+  };
+
   return (
     <div className="w-full min-w-0 h-screen flex flex-col overflow-hidden p-2 bg-background box-border">
       <header className="mb-1.5 flex shrink-0 items-center justify-between gap-1.5 border-b border-hairline/70 bg-background/80 pb-1.5 backdrop-blur-md">
@@ -557,7 +835,33 @@ export function SidePanel() {
         <div className="shrink-0">
           <SearchBar ref={searchInputRef} value={searchQuery} onChange={setSearchQuery} />
 
-          <div className="mb-2 flex items-center gap-1 overflow-x-auto">
+          <div className="mb-2 grid h-7 grid-cols-2 gap-0.5 rounded-md bg-muted/70 p-0.5">
+            <button
+              type="button"
+              className={cn(
+                'rounded-[5px] text-[11px] leading-none',
+                windowScope === 'current'
+                  ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+              onClick={() => void handleWindowScopeChange('current')}
+            >
+              This window
+            </button>
+            <button
+              type="button"
+              className={cn(
+                'rounded-[5px] text-[11px] leading-none',
+                windowScope === 'all'
+                  ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+              onClick={() => void handleWindowScopeChange('all')}
+            >
+              All windows
+            </button>
+          </div>
+          <div className="mb-2 flex flex-wrap items-center gap-1">
             <SavedSessions onRestored={loadTabs} />
             <RecentlyClosed onRestored={loadTabs} />
             <GroupToolbar
@@ -586,6 +890,15 @@ export function SidePanel() {
             />
           )}
 
+          <StaleTabsBanner
+            tabs={staleTabs.map((tab) => ({ id: tab.id, title: tab.title }))}
+            discardCount={discardCandidates.length}
+            thresholdMs={staleThresholdMs}
+            onThresholdChange={(ms) => void handleStaleThresholdChange(ms)}
+            onClose={handleCloseStale}
+            onDiscard={() => void handleDiscardStale()}
+          />
+
           {showActivity && (
             <>
               <SystemMemoryBar />
@@ -608,26 +921,53 @@ export function SidePanel() {
               </span>
               New tab
             </button>
-            {allGroups.map((group) => (
-              <TabGroupCard
-                key={group.id}
-                group={group}
-                onCloseTab={handleCloseTab}
-                onCloseAll={handleCloseAll}
-                onTabClick={handleTabClick}
-                onDuplicateTab={handleDuplicateTab}
-                showActivity={showActivity}
-                onToggleImportant={handleToggleGroupImportant}
-                onToggleTabImportant={handleToggleTabImportant}
-                onEditGroup={handleEditGroup}
-                onDeleteGroup={handleDeleteGroup}
-                onConvertToCustom={handleConvertToCustom}
-                onAddTabToGroup={handleAddTabToGroup}
-                onRemoveTabFromGroup={handleRemoveTabFromGroup}
-                customGroups={customGroups}
-                onTogglePin={handleTogglePin}
-              />
-            ))}
+            {sections.map((section) => {
+              const cards = section.groups.map((group) => (
+                <TabGroupCard
+                  key={`${section.windowId ?? 'current'}-${group.id}`}
+                  group={group}
+                  onCloseTab={handleCloseTab}
+                  onCloseAll={handleCloseAll}
+                  onTabClick={handleTabClick}
+                  onDuplicateTab={handleDuplicateTab}
+                  showActivity={showActivity}
+                  onToggleImportant={handleToggleGroupImportant}
+                  onToggleTabImportant={handleToggleTabImportant}
+                  onEditGroup={handleEditGroup}
+                  onDeleteGroup={handleDeleteGroup}
+                  onConvertToCustom={handleConvertToCustom}
+                  onAddTabToGroup={handleAddTabToGroup}
+                  onRemoveTabFromGroup={handleRemoveTabFromGroup}
+                  customGroups={customGroups}
+                  onTogglePin={handleTogglePin}
+                  onReloadTab={handleReloadTab}
+                  moveTargets={moveTargets}
+                  onMoveToWindow={(tabId, windowId) => void handleMoveToWindow(tabId, windowId)}
+                  onMoveToNewWindow={(tabId) => void handleMoveToNewWindow(tabId)}
+                  windowLabel={section.windowLabel}
+                />
+              ));
+              if (!section.showHeader || section.windowId == null) {
+                return (
+                  <div key={section.windowId ?? 'single-window'} className="min-w-0 space-y-1">
+                    {cards}
+                  </div>
+                );
+              }
+              return (
+                <WindowSection
+                  key={section.windowId}
+                  label={section.label}
+                  tabCount={section.tabCount}
+                  focused={section.focused}
+                  collapsed={collapsedWindows.includes(section.windowId)}
+                  onToggle={() => toggleWindowCollapsed(section.windowId!)}
+                  onFocus={() => handleFocusWindow(section.windowId!)}
+                >
+                  {cards}
+                </WindowSection>
+              );
+            })}
           </div>
         </ScrollArea>
       </main>
