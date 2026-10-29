@@ -1,6 +1,5 @@
 import { useState, type ComponentProps } from 'react';
 import { X, Shield, Edit2, Bookmark, Trash2, ChevronDown } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TabGroup, TabSubGroup, CustomGroupConfig } from '@/types/tab';
 import { TabItem } from '@/components/tab-item';
@@ -194,10 +193,12 @@ export function TabGroupCard({
           <FaviconImg src={group.favicon} className="h-3.5 w-3.5 shrink-0 rounded" />
         )}
         {isCustomGroup && group.color && (
-          <div
-            className="h-3.5 w-3.5 shrink-0 rounded-full"
-            style={{ backgroundColor: group.color }}
-          />
+          <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center" aria-hidden>
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: group.color }}
+            />
+          </span>
         )}
         <span
           className="min-w-0 truncate text-sm font-semibold tracking-tight"
@@ -283,24 +284,10 @@ export function TabGroupCard({
     </div>
   );
 
-  if (!isCustomGroup) {
-    return (
-      <div className="group/card min-w-0 border-l-[3px]" style={groupBorderStyle}>
-        {headerRow}
-        {!collapsed && <div className="min-w-0 space-y-0.5 pb-0.5 pl-2">{listBody}</div>}
-      </div>
-    );
-  }
-
   return (
-    <Card
-      className="group/card min-w-0 overflow-hidden rounded-lg border border-l-[3px] border-hairline/70 shadow-none"
-      style={groupBorderStyle}
-    >
+    <div className="group/card min-w-0 border-l-[3px]" style={groupBorderStyle}>
       {headerRow}
-      {!collapsed && (
-        <CardContent className="min-w-0 space-y-0.5 px-2 pb-1.5 pt-0">{listBody}</CardContent>
-      )}
-    </Card>
+      {!collapsed && <div className="min-w-0 space-y-0.5 pb-0.5 pl-2">{listBody}</div>}
+    </div>
   );
 }
