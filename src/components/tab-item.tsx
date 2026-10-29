@@ -1,4 +1,4 @@
-import { X, MoreVertical, FolderPlus, FolderMinus, Copy, Shield, Pin } from 'lucide-react';
+import { X, MoreVertical, FolderPlus, FolderMinus, Copy, Shield, Pin, RotateCw, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -22,11 +22,17 @@ interface TabItemProps {
   onDuplicate?: (tabId: number) => void;
   onToggleImportant?: (tabId: number) => void;
   onTogglePin?: (tabId: number) => void;
+  onReload?: (tabId: number) => void;
+  moveTargets?: { id: number; label: string }[];
+  onMoveToWindow?: (tabId: number, windowId: number) => void;
+  onMoveToNewWindow?: (tabId: number) => void;
+  /** Muted suffix, used when a one-tab window has no section header. */
+  windowLabel?: string;
   /** Tab is rendered inside a multi-tab group card (indented nest styling). */
   nestedInGroup?: boolean;
 }
 
-import { DEFAULT_FAVICON } from '@/lib/favicon';
+import { FaviconImg } from '@/components/favicon-img';
 
 export function TabItem({
   tab,
@@ -38,6 +44,11 @@ export function TabItem({
   onDuplicate,
   onToggleImportant,
   onTogglePin,
+  onReload,
+  moveTargets = [],
+  onMoveToWindow,
+  onMoveToNewWindow,
+  windowLabel,
   nestedInGroup = false,
 }: TabItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -66,12 +77,17 @@ export function TabItem({
   // Check if this tab is currently active
   const isActive = tab.active === true;
 
+  const otherWindows = moveTargets.filter((target) => target.id !== tab.windowId);
+  const canMove = !!onMoveToWindow || !!onMoveToNewWindow;
+
   const hasManageMenu =
     customGroups.length > 0 ||
     isInCustomGroup ||
     !!onDuplicate ||
     !!onToggleImportant ||
-    !!onTogglePin;
+    !!onTogglePin ||
+    (!!tab.discarded && !!onReload) ||
+    canMove;
 
   const tabActionBtn = 'h-5 w-5 shrink-0 p-0';
 
@@ -79,47 +95,51 @@ export function TabItem({
     <div
       className={cn(
         'group grid min-w-0 cursor-pointer items-center gap-1 rounded-md transition-colors',
-        'grid-cols-[16px_minmax(0,1fr)_auto]',
+        'grid-cols-[16px_minmax(0,1fr)_16px_auto]',
+        'border-l-2',
         nestedInGroup ? 'py-1 pl-2 pr-0.5' : 'py-1 px-2',
         'hover:bg-accent',
-        isActive && !nestedInGroup && 'border-l-2 border-primary bg-primary/10',
+        tab.discarded && 'opacity-60',
+        isActive && !nestedInGroup ? 'border-primary bg-primary/10' : 'border-transparent',
         isActive && nestedInGroup && 'bg-primary/10'
       )}
       onClick={() => onClick(tab.id)}
     >
-      <img
-        src={tab.favIconUrl || DEFAULT_FAVICON}
-        alt=""
-        className="h-4 w-4 shrink-0"
-        onError={(e) => {
-          e.currentTarget.src = DEFAULT_FAVICON;
-        }}
-      />
-      <div className="min-w-0 overflow-hidden">
+      <FaviconImg src={tab.favIconUrl} className="h-4 w-4 shrink-0" />
+      <div className="flex min-w-0 items-center gap-1 overflow-hidden">
         <span
           className={cn(
-            'block truncate text-xs',
+            'min-w-0 truncate text-xs',
             isActive ? 'font-medium text-primary' : 'font-normal text-foreground/90'
           )}
           title={tab.title}
         >
           {tab.title}
         </span>
+        {windowLabel && (
+          <span className="shrink-0 text-[10px] text-muted-foreground">{windowLabel}</span>
+        )}
+        {tab.discarded && (
+          <span className="shrink-0 text-[10px] text-muted-foreground">Sleeping</span>
+        )}
       </div>
 
       <div
-        className={cn(
-          'relative z-10 flex shrink-0 items-center gap-0',
-          isActive && 'min-w-5'
+        className="flex h-4 w-4 items-center justify-center"
+        aria-hidden={tab.pinned ? undefined : true}
+        aria-label={tab.pinned ? 'Pinned' : undefined}
+      >
+        {tab.pinned && (
+          <Pin className="h-3 w-3 shrink-0 text-muted-foreground" />
         )}
+      </div>
+
+      <div
+        className="relative z-10 flex shrink-0 items-center gap-0"
         onClick={(e) => e.stopPropagation()}
       >
         {tab.isImportant && (
           <Shield className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500" aria-hidden />
-        )}
-
-        {tab.pinned && (
-          <Pin className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
         )}
 
         {hasManageMenu && (
@@ -170,6 +190,55 @@ export function TabItem({
                 <Pin className="h-3 w-3" />
                 <span>{tab.pinned ? 'Unpin tab' : 'Pin tab'}</span>
               </button>
+            )}
+
+            {tab.discarded && onReload && (
+              <button
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReload(tab.id);
+                  setMenuOpen(false);
+                }}
+              >
+                <RotateCw className="h-3 w-3" />
+                <span>Reload</span>
+              </button>
+            )}
+
+            {canMove && (
+              <>
+                <div className="border-t my-1" />
+                <div className="text-xs text-muted-foreground px-2 py-1 flex items-center gap-1">
+                  <ArrowRightLeft className="h-3 w-3" />
+                  Move to
+                </div>
+                {otherWindows.map((target) => (
+                  <button
+                    key={target.id}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveToWindow?.(tab.id, target.id);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    <span className="truncate">{target.label}</span>
+                  </button>
+                ))}
+                {onMoveToNewWindow && (
+                  <button
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveToNewWindow(tab.id);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    <span>New window</span>
+                  </button>
+                )}
+              </>
             )}
 
             {/* Duplicate tab option */}
@@ -238,7 +307,9 @@ export function TabItem({
               !isInCustomGroup &&
               !onDuplicate &&
               !onToggleImportant &&
-              !onTogglePin && (
+              !onTogglePin &&
+              !(tab.discarded && onReload) &&
+              !canMove && (
               <div className="text-xs text-muted-foreground px-2 py-2">
                 No groups available. Create a group first.
               </div>

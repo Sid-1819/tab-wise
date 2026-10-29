@@ -15,6 +15,10 @@ export interface TabInfo {
   windowId?: number;
   index?: number;
   pinned?: boolean;
+  discarded?: boolean;
+  audible?: boolean;
+  /** Chrome's lastAccessed timestamp, used when activity has not recorded a visit. */
+  lastAccessed?: number;
   activity?: TabActivity; // Activity tracking data
   isImportant?: boolean; // Whether the tab is marked as important
 }

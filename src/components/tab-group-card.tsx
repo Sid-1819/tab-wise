@@ -1,12 +1,12 @@
 import { useState, type ComponentProps } from 'react';
 import { X, Shield, Edit2, Bookmark, Trash2, ChevronDown } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TabGroup, TabSubGroup, CustomGroupConfig } from '@/types/tab';
 import { TabItem } from '@/components/tab-item';
 import { getGroupBorderColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
-import { DEFAULT_FAVICON } from '@/lib/favicon';
+import { FaviconImg } from '@/components/favicon-img';
 
 interface TabGroupCardProps {
   group: TabGroup;
@@ -23,6 +23,12 @@ interface TabGroupCardProps {
   onRemoveTabFromGroup?: (tabId: number, groupId: string) => void;
   onToggleTabImportant?: (tabId: number) => void;
   onTogglePin?: (tabId: number) => void;
+  onReloadTab?: (tabId: number) => void;
+  moveTargets?: { id: number; label: string }[];
+  onMoveToWindow?: (tabId: number, windowId: number) => void;
+  onMoveToNewWindow?: (tabId: number) => void;
+  /** Shown on each tab when this window is a single row, not a section. */
+  windowLabel?: string;
   customGroups?: CustomGroupConfig[];
 }
 
@@ -30,7 +36,7 @@ const groupActionBtn =
   'h-5 w-5 shrink-0 p-0 opacity-0 transition-opacity group-hover/card:opacity-100 focus-visible:opacity-100';
 
 const groupCloseBtn =
-  'h-5 w-5 shrink-0 p-0 text-destructive/80 hover:bg-destructive/10 hover:text-destructive';
+  'h-5 w-5 shrink-0 p-0 text-destructive/80 opacity-0 transition-opacity group-hover/card:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive';
 
 interface TabSubGroupSectionProps {
   subgroup: TabSubGroup;
@@ -91,6 +97,11 @@ export function TabGroupCard({
   onRemoveTabFromGroup,
   onToggleTabImportant,
   onTogglePin,
+  onReloadTab,
+  moveTargets = [],
+  onMoveToWindow,
+  onMoveToNewWindow,
+  windowLabel,
   customGroups = [],
 }: TabGroupCardProps) {
   const isCustomGroup = group.type === 'custom';
@@ -120,6 +131,11 @@ export function TabGroupCard({
     onRemoveFromGroup: onRemoveTabFromGroup,
     onToggleImportant: onToggleTabImportant,
     onTogglePin,
+    onReload: onReloadTab,
+    moveTargets,
+    onMoveToWindow,
+    onMoveToNewWindow,
+    windowLabel,
   });
 
   if (isSingleAutoGroup && group.tabs.length === 1) {
@@ -134,152 +150,156 @@ export function TabGroupCard({
     ? group.tabs.filter((tab) => !subgroupTabIds.has(tab.id))
     : [];
 
+  const listBody =
+    group.tabs.length === 0 ? (
+      <div className="py-4 text-center text-sm text-muted-foreground">
+        No tabs in this group
+      </div>
+    ) : hasSubgroups ? (
+      <>
+        {group.subgroups!.map((subgroup) => (
+          <TabSubGroupSection
+            key={subgroup.id}
+            subgroup={subgroup}
+            tabItemProps={tabItemProps}
+          />
+        ))}
+        {orphanTabs.map((tab) => (
+          <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
+        ))}
+      </>
+    ) : (
+      group.tabs.map((tab) => (
+        <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
+      ))
+    );
+
+  const headerRow = (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 px-2 py-1">
+      <button
+        type="button"
+        className="flex min-w-0 items-center gap-1 overflow-hidden text-left"
+        onClick={() => group.tabs.length > 1 && setCollapsed((c) => !c)}
+        aria-expanded={!collapsed}
+      >
+        {group.tabs.length > 1 && (
+          <ChevronDown
+            className={cn(
+              'h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform',
+              collapsed && '-rotate-90'
+            )}
+          />
+        )}
+        {!isCustomGroup && (
+          <FaviconImg src={group.favicon} className="h-3.5 w-3.5 shrink-0 rounded" />
+        )}
+        {isCustomGroup && group.color && (
+          <div
+            className="h-3.5 w-3.5 shrink-0 rounded-full"
+            style={{ backgroundColor: group.color }}
+          />
+        )}
+        <span
+          className="min-w-0 truncate text-sm font-semibold tracking-tight"
+          title={displayName}
+        >
+          {displayName}
+          {group.tabs.length > 1 ? ` - ${group.tabs.length}` : ''}
+        </span>
+        {group.isImportant && (
+          <Shield className="h-3.5 w-3.5 shrink-0 fill-amber-500 text-amber-500" />
+        )}
+      </button>
+      <div className="flex shrink-0 items-center gap-0">
+        {!isCustomGroup && onConvertToCustom && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={groupActionBtn}
+            onClick={() => onConvertToCustom(group)}
+            aria-label={`Save ${displayName} as custom group`}
+            title="Save as custom group"
+          >
+            <Bookmark className="h-3.5 w-3.5" aria-hidden />
+          </Button>
+        )}
+        {isCustomGroup && onToggleImportant && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={groupActionBtn}
+            onClick={() => onToggleImportant(group.id)}
+            aria-label={
+              group.isImportant
+                ? `Remove important mark from ${displayName}`
+                : `Mark ${displayName} as important`
+            }
+            title={group.isImportant ? 'Remove important mark' : 'Mark as important'}
+          >
+            <Shield
+              className={cn(
+                'h-3.5 w-3.5',
+                group.isImportant && 'fill-amber-500 text-amber-500'
+              )}
+              aria-hidden
+            />
+          </Button>
+        )}
+        {isCustomGroup && onEditGroup && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={groupActionBtn}
+            onClick={() => onEditGroup(group.id)}
+            aria-label={`Edit ${displayName}`}
+            title="Edit group"
+          >
+            <Edit2 className="h-3.5 w-3.5" aria-hidden />
+          </Button>
+        )}
+        {isCustomGroup && onDeleteGroup && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(groupActionBtn, 'text-destructive hover:text-destructive')}
+            onClick={() => onDeleteGroup(group.id)}
+            aria-label={`Delete ${displayName}`}
+            title="Delete group"
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={groupCloseBtn}
+          onClick={handleCloseAll}
+          aria-label={`Close all tabs in ${displayName}`}
+          title="Close all tabs"
+        >
+          <X className="h-3.5 w-3.5" aria-hidden />
+        </Button>
+      </div>
+    </div>
+  );
+
+  if (!isCustomGroup) {
+    return (
+      <div className="group/card min-w-0 border-l-[3px]" style={groupBorderStyle}>
+        {headerRow}
+        {!collapsed && <div className="min-w-0 space-y-0.5 pb-0.5 pl-2">{listBody}</div>}
+      </div>
+    );
+  }
+
   return (
     <Card
       className="group/card min-w-0 overflow-hidden rounded-lg border border-l-[3px] border-hairline/70 shadow-none"
       style={groupBorderStyle}
     >
-      <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 space-y-0 px-2 py-1">
-        <button
-          type="button"
-          className="flex min-w-0 items-center gap-1 overflow-hidden text-left"
-          onClick={() => group.tabs.length > 1 && setCollapsed((c) => !c)}
-          aria-expanded={!collapsed}
-        >
-          {group.tabs.length > 1 && (
-            <ChevronDown
-              className={cn(
-                'h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform',
-                collapsed && '-rotate-90'
-              )}
-            />
-          )}
-          {!isCustomGroup && (
-            <img
-              src={group.favicon || DEFAULT_FAVICON}
-              alt=""
-              className="h-3.5 w-3.5 shrink-0 rounded"
-              onError={(e) => {
-                e.currentTarget.src = DEFAULT_FAVICON;
-              }}
-            />
-          )}
-          {isCustomGroup && group.color && (
-            <div
-              className="h-3.5 w-3.5 shrink-0 rounded-full"
-              style={{ backgroundColor: group.color }}
-            />
-          )}
-          <span
-            className="min-w-0 truncate text-sm font-semibold tracking-tight"
-            title={displayName}
-          >
-            {displayName}
-            {group.tabs.length > 1 ? ` - ${group.tabs.length}` : ''}
-          </span>
-          {group.isImportant && (
-            <Shield className="h-3.5 w-3.5 shrink-0 fill-amber-500 text-amber-500" />
-          )}
-        </button>
-        <div className="flex shrink-0 items-center gap-0">
-          {!isCustomGroup && onConvertToCustom && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={groupActionBtn}
-              onClick={() => onConvertToCustom(group)}
-              aria-label={`Save ${displayName} as custom group`}
-              title="Save as custom group"
-            >
-              <Bookmark className="h-3.5 w-3.5" aria-hidden />
-            </Button>
-          )}
-          {isCustomGroup && onToggleImportant && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={groupActionBtn}
-              onClick={() => onToggleImportant(group.id)}
-              aria-label={
-                group.isImportant
-                  ? `Remove important mark from ${displayName}`
-                  : `Mark ${displayName} as important`
-              }
-              title={group.isImportant ? 'Remove important mark' : 'Mark as important'}
-            >
-              <Shield
-                className={cn(
-                  'h-3.5 w-3.5',
-                  group.isImportant && 'fill-amber-500 text-amber-500'
-                )}
-                aria-hidden
-              />
-            </Button>
-          )}
-          {isCustomGroup && onEditGroup && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={groupActionBtn}
-              onClick={() => onEditGroup(group.id)}
-              aria-label={`Edit ${displayName}`}
-              title="Edit group"
-            >
-              <Edit2 className="h-3.5 w-3.5" aria-hidden />
-            </Button>
-          )}
-          {isCustomGroup && onDeleteGroup && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                groupActionBtn,
-                'text-destructive hover:text-destructive'
-              )}
-              onClick={() => onDeleteGroup(group.id)}
-              aria-label={`Delete ${displayName}`}
-              title="Delete group"
-            >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={groupCloseBtn}
-            onClick={handleCloseAll}
-            aria-label={`Close all tabs in ${displayName}`}
-            title="Close all tabs"
-          >
-            <X className="h-3.5 w-3.5" aria-hidden />
-          </Button>
-        </div>
-      </CardHeader>
+      {headerRow}
       {!collapsed && (
-        <CardContent className="min-w-0 space-y-0.5 px-2 pb-1.5 pt-0">
-          {group.tabs.length === 0 ? (
-            <div className="py-4 text-center text-sm text-muted-foreground">
-              No tabs in this group
-            </div>
-          ) : hasSubgroups ? (
-            <>
-              {group.subgroups!.map((subgroup) => (
-                <TabSubGroupSection
-                  key={subgroup.id}
-                  subgroup={subgroup}
-                  tabItemProps={tabItemProps}
-                />
-              ))}
-              {orphanTabs.map((tab) => (
-                <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
-              ))}
-            </>
-          ) : (
-            group.tabs.map((tab) => (
-              <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
-            ))
-          )}
-        </CardContent>
+        <CardContent className="min-w-0 space-y-0.5 px-2 pb-1.5 pt-0">{listBody}</CardContent>
       )}
     </Card>
   );

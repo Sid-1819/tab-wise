@@ -1,15 +1,26 @@
 /** Strip tracking params and normalize for duplicate detection (http/https only). */
-const TRACKING_PARAMS = [
-  'utm_source',
-  'utm_medium',
-  'utm_campaign',
-  'utm_term',
-  'utm_content',
+const TRACKING_EXACT = new Set([
   'fbclid',
   'gclid',
   'mc_cid',
   'mc_eid',
-];
+  'si',
+  'igshid',
+  'ref_src',
+]);
+
+function isTrackingParam(key: string): boolean {
+  const normalized = key.toLowerCase();
+  return normalized.startsWith('utm_') || TRACKING_EXACT.has(normalized);
+}
+
+/** Drop empty hashes and scroll-to-text fragments. Keep routes like #inbox. */
+function canonicalHash(hash: string): string {
+  if (!hash || hash === '#') return '';
+  const body = hash.startsWith('#') ? hash.slice(1) : hash;
+  if (body.startsWith(':~:')) return '';
+  return `#${body}`;
+}
 
 export function normalizeTabUrl(url: string): string | null {
   if (
@@ -27,12 +38,14 @@ export function normalizeTabUrl(url: string): string | null {
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
     let host = u.hostname.toLowerCase();
     if (host.startsWith('www.')) host = host.slice(4);
-    const params = new URLSearchParams(u.search);
-    for (const k of TRACKING_PARAMS) params.delete(k);
-    const search = params.toString();
+    const entries = [...u.searchParams.entries()]
+      .filter(([key]) => !isTrackingParam(key))
+      .sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
+    const search = new URLSearchParams(entries).toString();
     let path = u.pathname;
     if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
-    return `${u.protocol}//${host}${path || '/'}${search ? `?${search}` : ''}`;
+    const hash = canonicalHash(u.hash);
+    return `https://${host}${path || '/'}${search ? `?${search}` : ''}${hash}`;
   } catch {
     return null;
   }
