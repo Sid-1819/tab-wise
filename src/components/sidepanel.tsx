@@ -57,7 +57,7 @@ import { getTabFaviconUrl } from '@/lib/favicon';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
-const FEEDBACK_URL = 'https://form.encatch.com/s/51cdd46c-4f2a-4d21-9e3d-5207b56f6ee5';
+const FEEDBACK_URL = 'https://form.encatch.com/s/a29991a5-0c38-48c0-8fd8-61462f58821c';
 
 function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCount: number }) {
   const { resolvedTheme } = useTheme();
