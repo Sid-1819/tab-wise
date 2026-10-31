@@ -27,7 +27,8 @@ export function groupTabs(
   lastUsedInterval: number = 1,
   enableAutoDelete: boolean = false,
   autoDeleteThreshold: number = 24 * 60 * 60 * 1000,
-  showNestedGroups: boolean = true
+  showNestedGroups: boolean = true,
+  enableAutoGrouping: boolean = true
 ): GroupedTabs {
   const groups: GroupedTabs = {};
 
@@ -56,10 +57,23 @@ export function groupTabs(
     groupTabs.forEach((tab) => tabsInCustomGroups.add(tab.id));
   });
 
-  // Then, apply auto-grouping to remaining tabs
+  // Then, apply auto-grouping to remaining tabs. When auto-grouping is off,
+  // each leftover tab stays on its own so the list renders as flat rows.
   const remainingTabs = tabs.filter((tab) => !tabsInCustomGroups.has(tab.id));
 
-  if (strategy === 'domain') {
+  if (!enableAutoGrouping) {
+    remainingTabs.forEach((tab) => {
+      const groupKey = `flat_${tab.id}`;
+      groups[groupKey] = {
+        id: groupKey,
+        domain: tab.title || tab.url,
+        tabs: [tab],
+        type: 'automatic',
+        createdAt: tab.lastAccessed ?? Date.now(),
+        favicon: getTabFaviconUrl(tab.url),
+      };
+    });
+  } else if (strategy === 'domain') {
     groupByDomain(remainingTabs, groups, showNestedGroups);
   } else if (strategy === 'content-similarity') {
     groupByContentSimilarity(remainingTabs, groups);

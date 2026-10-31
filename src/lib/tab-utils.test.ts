@@ -57,6 +57,55 @@ describe('groupTabs domain nesting', () => {
 
     expect(grouped.auto_Encatch.subgroups).toBeUndefined();
   });
+
+  it('lists remaining tabs individually when auto grouping is disabled', () => {
+    const grouped = groupTabs(
+      encatchTabs,
+      'domain',
+      [],
+      [],
+      [],
+      1,
+      false,
+      24 * 60 * 60 * 1000,
+      true,
+      false
+    );
+    const autoGroups = Object.values(grouped).filter((group) => group.type === 'automatic');
+
+    expect(autoGroups).toHaveLength(4);
+    expect(autoGroups.every((group) => group.tabs.length === 1)).toBe(true);
+    expect(autoGroups.flatMap((group) => group.tabs.map((tab) => tab.id)).sort()).toEqual([
+      10, 11, 12, 13,
+    ]);
+  });
+
+  it('keeps custom groups when auto grouping is disabled', () => {
+    const grouped = groupTabs(
+      encatchTabs,
+      'domain',
+      [
+        {
+          id: 'g1',
+          name: 'Work',
+          color: '#fff',
+          tabIds: [10],
+          createdAt: 1,
+          lastModified: 1,
+        },
+      ],
+      [],
+      [],
+      1,
+      false,
+      24 * 60 * 60 * 1000,
+      true,
+      false
+    );
+
+    expect(grouped.g1.tabs.map((tab) => tab.id)).toEqual([10]);
+    expect(Object.values(grouped).filter((group) => group.type === 'automatic')).toHaveLength(3);
+  });
 });
 
 describe('filterTabs', () => {

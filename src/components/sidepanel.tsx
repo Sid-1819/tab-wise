@@ -150,7 +150,7 @@ export function SidePanel() {
   const loadGroupingSettings = useCallback(async () => {
     const settings = await getGroupingSettings();
     setAutoGroupStrategy(settings.autoGroupStrategies[0] || 'domain');
-    setEnableAutoGrouping(settings.enableAutoGrouping);
+    setEnableAutoGrouping(settings.enableAutoGrouping ?? true);
     setLastUsedInterval(settings.lastUsedInterval || 1);
     setEnableAutoDelete(settings.enableAutoDeleteGrouping || false);
     setAutoDeleteThreshold(settings.autoDeleteThreshold || 24 * 60 * 60 * 1000);
@@ -251,17 +251,17 @@ export function SidePanel() {
 
   const buildGroups = useCallback(
     (groupTabsSource: TabInfo[], groupsForCall: CustomGroupConfig[]) => {
-      const strategy = enableAutoGrouping ? autoGroupStrategy : 'domain';
       const grouped: GroupedTabs = groupTabs(
         groupTabsSource,
-        strategy,
+        autoGroupStrategy,
         groupsForCall,
         importantTabs,
         importantGroups,
         lastUsedInterval,
         enableAutoDelete,
         autoDeleteThreshold,
-        showNestedGroups
+        showNestedGroups,
+        enableAutoGrouping
       );
       return Object.values(grouped);
     },
@@ -426,6 +426,18 @@ export function SidePanel() {
         description: `"${group.name}" ${wasImportant ? 'removed from' : 'marked as'} important.`,
       });
     }
+  };
+
+  const handleAutoGroupingToggle = async (enabled: boolean) => {
+    setEnableAutoGrouping(enabled);
+    const settings = await getGroupingSettings();
+    await saveGroupingSettings({ ...settings, enableAutoGrouping: enabled });
+  };
+
+  const handleStrategyChange = async (strategy: AutoGroupStrategy) => {
+    setAutoGroupStrategy(strategy);
+    const settings = await getGroupingSettings();
+    await saveGroupingSettings({ ...settings, autoGroupStrategies: [strategy] });
   };
 
   const handleLastUsedIntervalChange = async (interval: number) => {
@@ -867,9 +879,9 @@ export function SidePanel() {
             <GroupToolbar
               onCreateGroup={handleCreateGroup}
               autoGroupStrategy={autoGroupStrategy}
-              onStrategyChange={setAutoGroupStrategy}
+              onStrategyChange={(strategy) => void handleStrategyChange(strategy)}
               enableAutoGrouping={enableAutoGrouping}
-              onToggleAutoGrouping={setEnableAutoGrouping}
+              onToggleAutoGrouping={(enabled) => void handleAutoGroupingToggle(enabled)}
               lastUsedInterval={lastUsedInterval}
               onLastUsedIntervalChange={handleLastUsedIntervalChange}
               enableAutoDelete={enableAutoDelete}
