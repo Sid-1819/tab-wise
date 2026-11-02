@@ -96,21 +96,20 @@ export function TabItem({
       className={cn(
         'group grid min-w-0 cursor-pointer items-center gap-1 rounded-md transition-colors',
         'grid-cols-[16px_minmax(0,1fr)_16px_auto]',
-        'border-l-2',
         nestedInGroup ? 'py-1 pl-2 pr-0.5' : 'py-1 px-2',
         'hover:bg-accent',
         tab.discarded && 'opacity-60',
-        isActive && !nestedInGroup ? 'border-primary bg-primary/10' : 'border-transparent',
-        isActive && nestedInGroup && 'bg-primary/10'
+        isActive && 'bg-accent'
       )}
+      aria-current={isActive ? 'true' : undefined}
       onClick={() => onClick(tab.id)}
     >
       <FaviconImg src={tab.favIconUrl} className="h-4 w-4 shrink-0" />
       <div className="flex min-w-0 items-center gap-1 overflow-hidden">
         <span
           className={cn(
-            'min-w-0 truncate text-xs',
-            isActive ? 'font-medium text-primary' : 'font-normal text-foreground/90'
+            'min-w-0 truncate text-xs text-foreground/90',
+            isActive && 'font-medium text-foreground'
           )}
           title={tab.title}
         >
@@ -323,8 +322,7 @@ export function TabItem({
           size="icon"
           className={cn(
             tabActionBtn,
-            'text-muted-foreground/80 hover:text-foreground',
-            !isActive && 'hidden group-hover:inline-flex'
+            'hidden text-muted-foreground/80 hover:text-foreground group-hover:inline-flex focus-visible:inline-flex'
           )}
           onClick={() => onClose(tab.id)}
           aria-label={`Close ${tab.title}`}
