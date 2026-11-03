@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { nextSelectedId, orderedTabIds, selectionAfterClose, shortcutAction } from './shortcuts';
+import { nextIndex, nextSelectedId, orderedTabIds, selectionAfterClose, shortcutAction } from './shortcuts';
 
 describe('shortcutAction', () => {
   it('maps list keys when the panel is idle', () => {
@@ -58,6 +58,15 @@ describe('selection movement', () => {
     expect(selectionAfterClose(ids, 8)).toBe(15);
     expect(selectionAfterClose(ids, 15)).toBe(8);
     expect(selectionAfterClose([8], 8)).toBeNull();
+  });
+});
+
+describe('nextIndex', () => {
+  it('wraps across the ends of the visible rows', () => {
+    expect(nextIndex(4, 3, 1)).toBe(0);
+    expect(nextIndex(4, 0, -1)).toBe(3);
+    expect(nextIndex(4, 1, 1)).toBe(2);
+    expect(nextIndex(0, 0, 1)).toBe(-1);
   });
 });
 

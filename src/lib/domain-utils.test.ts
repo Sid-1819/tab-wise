@@ -39,6 +39,11 @@ describe('getDomainGroupName', () => {
 });
 
 describe('getSubGroupLabel', () => {
+  it('labels loopback hosts separately so they do not share Root', () => {
+    expect(getSubGroupLabel('127.0.0.1', 'Localhost')).toBe('127.0.0.1');
+    expect(getSubGroupLabel('localhost', 'Localhost')).toBe('Localhost');
+  });
+
   it('labels apex hostnames as Root', () => {
     expect(getSubGroupLabel('encatch.com', 'Encatch')).toBe('Root');
   });

@@ -57,12 +57,28 @@ import {
   type WindowScope,
 } from '@/lib/group-storage';
 import { getTabFaviconUrl } from '@/lib/favicon';
-import { nextSelectedId, orderedTabIds, selectionAfterClose, shortcutAction } from '@/lib/shortcuts';
+import { nextIndex, shortcutAction } from '@/lib/shortcuts';
 import { CommandPalette, type PaletteAction } from '@/components/command-palette';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
 const FEEDBACK_URL = 'https://form.encatch.com/s/a29991a5-0c38-48c0-8fd8-61462f58821c';
+
+function visibleNavKeys(): string[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('[data-nav-key]'))
+    .map((el) => el.dataset.navKey)
+    .filter((key): key is string => Boolean(key));
+}
+
+function tabIdFromNavKey(key: string | null): number | null {
+  if (!key) return null;
+  const id = Number(key.slice(key.lastIndexOf(':') + 1));
+  return Number.isFinite(id) ? id : null;
+}
+
+function navRow(key: string): HTMLElement | null {
+  return document.querySelector<HTMLElement>(`[data-nav-key="${CSS.escape(key)}"]`);
+}
 
 function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCount: number }) {
   const { resolvedTheme } = useTheme();
@@ -114,7 +130,7 @@ export function SidePanel() {
   const [collapsedWindows, setCollapsedWindows] = useState<number[]>([]);
   const [showGroupDialog, setShowGroupDialog] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [selectedTabId, setSelectedTabId] = useState<number | null>(null);
+  const [selectedNavKey, setSelectedNavKey] = useState<string | null>(null);
   const [editingGroup, setEditingGroup] = useState<CustomGroupConfig | undefined>();
   const [tabsForNewGroup, setTabsForNewGroup] = useState<TabInfo[]>([]);
   const { toast } = useToast();
@@ -247,14 +263,14 @@ export function SidePanel() {
   }, [loadTabs, loadCustomGroups, loadGroupingSettings, loadImportantTabs]);
 
   useEffect(() => {
-    if (selectedTabId == null) return;
-    const row = document.querySelector<HTMLElement>(`[data-tab-id="${selectedTabId}"]`);
+    if (selectedNavKey == null) return;
+    const row = navRow(selectedNavKey);
     if (!row) return;
     row.scrollIntoView({ block: 'nearest' });
     if (document.activeElement !== searchInputRef.current) {
       row.focus({ preventScroll: true });
     }
-  }, [selectedTabId]);
+  }, [selectedNavKey]);
 
   // Clean up dead tabs from groups when tabs change
   useEffect(() => {
@@ -332,7 +348,6 @@ export function SidePanel() {
   };
 
   const handleTabClick = (tabId: number) => {
-    setSelectedTabId(tabId);
     chrome.tabs.update(tabId, { active: true });
     chrome.tabs.get(tabId, (tab) => {
       if (tab.windowId) {
@@ -638,15 +653,13 @@ export function SidePanel() {
     buildGroups,
   ]);
 
-  const keyboardTabIds = useMemo(
-    () => sections.flatMap((section) => orderedTabIds(section.groups)),
-    [sections]
-  );
+  const selectedTabId = tabIdFromNavKey(selectedNavKey);
 
   useEffect(() => {
-    if (selectedTabId == null) return;
-    if (!keyboardTabIds.includes(selectedTabId)) setSelectedTabId(keyboardTabIds[0] ?? null);
-  }, [selectedTabId, keyboardTabIds]);
+    if (selectedNavKey == null) return;
+    const keys = visibleNavKeys();
+    if (!keys.includes(selectedNavKey)) setSelectedNavKey(keys[0] ?? null);
+  }, [selectedNavKey, sections, searchQuery]);
 
   useEffect(() => {
     if (selectedTabId == null) return;
@@ -903,27 +916,25 @@ export function SidePanel() {
     showGroupDialog: boolean;
     paletteOpen: boolean;
     searchQuery: string;
-    selectedTabId: number | null;
+    selectedNavKey: string | null;
     tabs: TabInfo[];
     openTab: (tabId: number) => void;
     closeTab: (tabId: number) => void;
     sleepTab: (tabId: number) => void;
     reloadTab: (tabId: number) => void;
     newTab: () => void;
-    orderedIds: number[];
   } | null>(null);
   shortcutApiRef.current = {
     showGroupDialog,
     paletteOpen,
     searchQuery,
-    selectedTabId,
+    selectedNavKey,
     tabs,
     openTab: handleTabClick,
     closeTab: handleCloseTab,
     sleepTab: (tabId) => void handleDiscardTab(tabId),
     reloadTab: handleReloadTab,
     newTab: handleCreateNewTab,
-    orderedIds: keyboardTabIds,
   };
 
   useEffect(() => {
@@ -965,25 +976,30 @@ export function SidePanel() {
       const action = shortcutAction(event, inSearch ? 'search' : 'idle');
       if (!action || action === 'open-palette') return;
 
-      const ids = api.orderedIds;
-      const selected = api.tabs.find((tab) => tab.id === api.selectedTabId) ?? null;
+      const keys = visibleNavKeys();
+      const selectedId = tabIdFromNavKey(api.selectedNavKey);
+      const selected = api.tabs.find((tab) => tab.id === selectedId) ?? null;
 
       if (action === 'move-next' || action === 'move-prev') {
         event.preventDefault();
-        setSelectedTabId(nextSelectedId(ids, api.selectedTabId, action === 'move-next' ? 1 : -1));
+        const index = api.selectedNavKey == null ? -1 : keys.indexOf(api.selectedNavKey);
+        const next = nextIndex(keys.length, index, action === 'move-next' ? 1 : -1);
+        setSelectedNavKey(next < 0 ? null : keys[next]);
         return;
       }
       if (action === 'open') {
-        if (api.selectedTabId == null) return;
+        if (selectedId == null) return;
         event.preventDefault();
-        api.openTab(api.selectedTabId);
+        api.openTab(selectedId);
         return;
       }
       if (action === 'close') {
-        if (api.selectedTabId == null) return;
+        if (selectedId == null) return;
         event.preventDefault();
-        setSelectedTabId(selectionAfterClose(ids, api.selectedTabId));
-        api.closeTab(api.selectedTabId);
+        const index = keys.indexOf(api.selectedNavKey ?? '');
+        const nextKey = keys[index + 1] ?? keys[index - 1] ?? null;
+        setSelectedNavKey(nextKey);
+        api.closeTab(selectedId);
         return;
       }
       if (action === 'sleep') {
@@ -1018,7 +1034,7 @@ export function SidePanel() {
           searchInputRef.current?.blur();
           return;
         }
-        setSelectedTabId(null);
+        setSelectedNavKey(null);
       }
     };
 
@@ -1223,7 +1239,8 @@ export function SidePanel() {
                   onMoveToWindow={(tabId, windowId) => void handleMoveToWindow(tabId, windowId)}
                   onMoveToNewWindow={(tabId) => void handleMoveToNewWindow(tabId)}
                   windowLabel={section.windowLabel}
-                  selectedTabId={selectedTabId}
+                  selectedNavKey={selectedNavKey}
+                  onSelectRow={setSelectedNavKey}
                 />
               ));
               if (!section.showHeader || section.windowId == null) {

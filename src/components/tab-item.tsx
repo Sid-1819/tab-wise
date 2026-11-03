@@ -33,6 +33,9 @@ interface TabItemProps {
   /** Tab is rendered inside a multi-tab group card (indented nest styling). */
   nestedInGroup?: boolean;
   selected?: boolean;
+  /** Unique key for this rendered row. The same tab can appear in more than one row. */
+  navKey?: string;
+  onSelectRow?: (navKey: string) => void;
 }
 
 import { FaviconImg } from '@/components/favicon-img';
@@ -55,6 +58,8 @@ export function TabItem({
   windowLabel,
   nestedInGroup = false,
   selected = false,
+  navKey,
+  onSelectRow,
 }: TabItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -101,6 +106,7 @@ export function TabItem({
   return (
     <div
       data-tab-id={tab.id}
+      data-nav-key={navKey}
       tabIndex={selected ? 0 : -1}
       className={cn(
         'group grid min-w-0 cursor-pointer items-center gap-1 rounded-md transition-colors',
@@ -113,7 +119,10 @@ export function TabItem({
         selected && 'ring-1 ring-inset ring-ring'
       )}
       aria-current={isActive ? 'true' : undefined}
-      onClick={() => onClick(tab.id)}
+      onClick={() => {
+        if (navKey) onSelectRow?.(navKey);
+        onClick(tab.id);
+      }}
     >
       <FaviconImg src={tab.favIconUrl} className="h-4 w-4 shrink-0" />
       <div className="flex min-w-0 items-center gap-1 overflow-hidden">

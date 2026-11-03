@@ -127,6 +127,10 @@ function prettifySubdomainPrefix(prefix: string): string {
 export function getSubGroupLabel(hostname: string, _groupName: string): string {
   const normalized = normalizeHostname(hostname);
 
+  if (isLoopbackHostname(normalized) || isIpHostname(normalized)) {
+    return isIpHostname(normalized) ? normalized.replace(/^\[|\]$/g, '') : 'Localhost';
+  }
+
   if (isApexHostname(normalized)) {
     return 'Root';
   }

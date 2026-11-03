@@ -55,6 +55,12 @@ export function shortcutAction(
   return null;
 }
 
+export function nextIndex(length: number, index: number, direction: 1 | -1): number {
+  if (length <= 0) return -1;
+  if (index < 0 || index >= length) return direction === 1 ? 0 : length - 1;
+  return (index + direction + length) % length;
+}
+
 export function nextSelectedId(
   ids: number[],
   selectedId: number | null,

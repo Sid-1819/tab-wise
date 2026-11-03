@@ -30,7 +30,8 @@ interface TabGroupCardProps {
   /** Shown on each tab when this window is a single row, not a section. */
   windowLabel?: string;
   customGroups?: CustomGroupConfig[];
-  selectedTabId?: number | null;
+  selectedNavKey?: string | null;
+  onSelectRow?: (navKey: string) => void;
 }
 
 const groupActionBtn =
@@ -41,14 +42,21 @@ const groupCloseBtn =
 
 interface TabSubGroupSectionProps {
   subgroup: TabSubGroup;
-  tabItemProps: (tab: TabSubGroup['tabs'][0]) => ComponentProps<typeof TabItem>;
-  selectedTabId?: number | null;
+  groupId: string;
+  tabItemProps: (tab: TabSubGroup['tabs'][0], scope: string) => ComponentProps<typeof TabItem>;
+  selectedNavKey?: string | null;
 }
 
-function TabSubGroupSection({ subgroup, tabItemProps, selectedTabId }: TabSubGroupSectionProps) {
+function TabSubGroupSection({
+  subgroup,
+  groupId,
+  tabItemProps,
+  selectedNavKey,
+}: TabSubGroupSectionProps) {
   const [collapsed, setCollapsed] = useState(false);
   const hasMultipleTabs = subgroup.tabs.length > 1;
-  if (collapsed && subgroup.tabs.some((tab) => tab.id === selectedTabId)) {
+  const navPrefix = `${groupId}:${subgroup.id}:`;
+  if (collapsed && selectedNavKey?.startsWith(navPrefix)) {
     setCollapsed(false);
   }
 
@@ -80,7 +88,7 @@ function TabSubGroupSection({ subgroup, tabItemProps, selectedTabId }: TabSubGro
       {!collapsed && (
         <div className="space-y-0.5 pl-3">
           {subgroup.tabs.map((tab) => (
-            <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
+            <TabItem key={tab.id} {...tabItemProps(tab, subgroup.id)} nestedInGroup />
           ))}
         </div>
       )}
@@ -109,13 +117,14 @@ export function TabGroupCard({
   onMoveToNewWindow,
   windowLabel,
   customGroups = [],
-  selectedTabId = null,
+  selectedNavKey = null,
+  onSelectRow,
 }: TabGroupCardProps) {
   const isCustomGroup = group.type === 'custom';
   const isChromeGroup = group.type === 'chrome';
   const isSingleAutoGroup = group.tabs.length === 1 && group.type === 'automatic';
   const [collapsed, setCollapsed] = useState(isChromeGroup && !!group.collapsed);
-  if (collapsed && group.tabs.some((tab) => tab.id === selectedTabId)) {
+  if (collapsed && selectedNavKey?.startsWith(`${group.id}:`)) {
     setCollapsed(false);
   }
 
@@ -131,28 +140,33 @@ export function TabGroupCard({
     borderLeftWidth: '3px',
   } as const;
 
-  const tabItemProps = (tab: (typeof group.tabs)[0]) => ({
-    tab,
-    onClose: onCloseTab,
-    onClick: onTabClick,
-    onDuplicate: onDuplicateTab,
-    customGroups,
-    currentGroupId: isCustomGroup ? group.id : undefined,
-    onAddToGroup: onAddTabToGroup,
-    onRemoveFromGroup: onRemoveTabFromGroup,
-    onToggleImportant: onToggleTabImportant,
-    onTogglePin,
-    onReload: onReloadTab,
-    onSleep: onSleepTab,
-    moveTargets,
-    onMoveToWindow,
-    onMoveToNewWindow,
-    windowLabel,
-    selected: tab.id === selectedTabId,
-  });
+  const tabItemProps = (tab: (typeof group.tabs)[0], scope: string) => {
+    const navKey = `${group.id}:${scope}:${tab.id}`;
+    return {
+      tab,
+      onClose: onCloseTab,
+      onClick: onTabClick,
+      onDuplicate: onDuplicateTab,
+      customGroups,
+      currentGroupId: isCustomGroup ? group.id : undefined,
+      onAddToGroup: onAddTabToGroup,
+      onRemoveFromGroup: onRemoveTabFromGroup,
+      onToggleImportant: onToggleTabImportant,
+      onTogglePin,
+      onReload: onReloadTab,
+      onSleep: onSleepTab,
+      moveTargets,
+      onMoveToWindow,
+      onMoveToNewWindow,
+      windowLabel,
+      navKey,
+      selected: selectedNavKey === navKey,
+      onSelectRow,
+    };
+  };
 
   if (isSingleAutoGroup && group.tabs.length === 1) {
-    return <TabItem {...tabItemProps(group.tabs[0])} />;
+    return <TabItem {...tabItemProps(group.tabs[0], 'row')} />;
   }
 
   const hasSubgroups = (group.subgroups?.length ?? 0) >= 2;
@@ -174,17 +188,18 @@ export function TabGroupCard({
           <TabSubGroupSection
             key={subgroup.id}
             subgroup={subgroup}
+            groupId={group.id}
             tabItemProps={tabItemProps}
-            selectedTabId={selectedTabId}
+            selectedNavKey={selectedNavKey}
           />
         ))}
         {orphanTabs.map((tab) => (
-          <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
+          <TabItem key={tab.id} {...tabItemProps(tab, 'orphan')} nestedInGroup />
         ))}
       </>
     ) : (
       group.tabs.map((tab) => (
-        <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
+        <TabItem key={tab.id} {...tabItemProps(tab, 'list')} nestedInGroup />
       ))
     );
 
