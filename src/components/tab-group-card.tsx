@@ -30,6 +30,7 @@ interface TabGroupCardProps {
   /** Shown on each tab when this window is a single row, not a section. */
   windowLabel?: string;
   customGroups?: CustomGroupConfig[];
+  selectedTabId?: number | null;
 }
 
 const groupActionBtn =
@@ -41,11 +42,15 @@ const groupCloseBtn =
 interface TabSubGroupSectionProps {
   subgroup: TabSubGroup;
   tabItemProps: (tab: TabSubGroup['tabs'][0]) => ComponentProps<typeof TabItem>;
+  selectedTabId?: number | null;
 }
 
-function TabSubGroupSection({ subgroup, tabItemProps }: TabSubGroupSectionProps) {
+function TabSubGroupSection({ subgroup, tabItemProps, selectedTabId }: TabSubGroupSectionProps) {
   const [collapsed, setCollapsed] = useState(false);
   const hasMultipleTabs = subgroup.tabs.length > 1;
+  if (collapsed && subgroup.tabs.some((tab) => tab.id === selectedTabId)) {
+    setCollapsed(false);
+  }
 
   return (
     <div className="space-y-0.5">
@@ -104,11 +109,15 @@ export function TabGroupCard({
   onMoveToNewWindow,
   windowLabel,
   customGroups = [],
+  selectedTabId = null,
 }: TabGroupCardProps) {
   const isCustomGroup = group.type === 'custom';
   const isChromeGroup = group.type === 'chrome';
   const isSingleAutoGroup = group.tabs.length === 1 && group.type === 'automatic';
   const [collapsed, setCollapsed] = useState(isChromeGroup && !!group.collapsed);
+  if (collapsed && group.tabs.some((tab) => tab.id === selectedTabId)) {
+    setCollapsed(false);
+  }
 
   const handleCloseAll = () => {
     const tabIds = group.tabs.map((tab) => tab.id);
@@ -139,6 +148,7 @@ export function TabGroupCard({
     onMoveToWindow,
     onMoveToNewWindow,
     windowLabel,
+    selected: tab.id === selectedTabId,
   });
 
   if (isSingleAutoGroup && group.tabs.length === 1) {
@@ -165,6 +175,7 @@ export function TabGroupCard({
             key={subgroup.id}
             subgroup={subgroup}
             tabItemProps={tabItemProps}
+            selectedTabId={selectedTabId}
           />
         ))}
         {orphanTabs.map((tab) => (

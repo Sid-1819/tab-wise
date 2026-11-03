@@ -67,8 +67,23 @@ export function normalizeHostname(urlOrHostname: string): string {
   }
 }
 
+export function isIpHostname(hostname: string): boolean {
+  const normalized = normalizeHostname(hostname).replace(/^\[|\]$/g, '');
+  if (normalized.includes(':')) return true;
+  return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(normalized);
+}
+
+function isLoopbackHostname(hostname: string): boolean {
+  const normalized = normalizeHostname(hostname).replace(/^\[|\]$/g, '');
+  if (normalized === 'localhost' || normalized === '::1' || normalized === '0.0.0.0') return true;
+  return /^127(?:\.\d{1,3}){3}$/.test(normalized);
+}
+
 export function getDomainGroupName(hostname: string): string {
   const normalized = normalizeHostname(hostname);
+
+  if (isLoopbackHostname(normalized)) return 'Localhost';
+  if (isIpHostname(normalized)) return normalized;
 
   if (KNOWN_DOMAINS[normalized]) {
     return KNOWN_DOMAINS[normalized];
@@ -90,6 +105,7 @@ export function getHostnameKey(urlOrHostname: string): string {
 
 export function isApexHostname(hostname: string): boolean {
   const normalized = normalizeHostname(hostname);
+  if (normalized === 'localhost' || isIpHostname(normalized)) return true;
   return normalized.split('.').length <= 2;
 }
 

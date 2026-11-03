@@ -32,6 +32,7 @@ interface TabItemProps {
   windowLabel?: string;
   /** Tab is rendered inside a multi-tab group card (indented nest styling). */
   nestedInGroup?: boolean;
+  selected?: boolean;
 }
 
 import { FaviconImg } from '@/components/favicon-img';
@@ -53,6 +54,7 @@ export function TabItem({
   onMoveToNewWindow,
   windowLabel,
   nestedInGroup = false,
+  selected = false,
 }: TabItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -98,13 +100,17 @@ export function TabItem({
 
   return (
     <div
+      data-tab-id={tab.id}
+      tabIndex={selected ? 0 : -1}
       className={cn(
         'group grid min-w-0 cursor-pointer items-center gap-1 rounded-md transition-colors',
         'grid-cols-[16px_minmax(0,1fr)_16px_auto]',
         nestedInGroup ? 'py-1 pl-2 pr-0.5' : 'py-1 px-2',
         'hover:bg-accent',
+        'outline-none',
         tab.discarded && 'opacity-60',
-        isActive && 'bg-accent'
+        isActive && 'bg-accent',
+        selected && 'ring-1 ring-inset ring-ring'
       )}
       aria-current={isActive ? 'true' : undefined}
       onClick={() => onClick(tab.id)}

@@ -57,6 +57,8 @@ import {
   type WindowScope,
 } from '@/lib/group-storage';
 import { getTabFaviconUrl } from '@/lib/favicon';
+import { nextSelectedId, orderedTabIds, selectionAfterClose, shortcutAction } from '@/lib/shortcuts';
+import { CommandPalette, type PaletteAction } from '@/components/command-palette';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -111,6 +113,8 @@ export function SidePanel() {
   const [browserWindows, setBrowserWindows] = useState<{ id: number; focused: boolean }[]>([]);
   const [collapsedWindows, setCollapsedWindows] = useState<number[]>([]);
   const [showGroupDialog, setShowGroupDialog] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [selectedTabId, setSelectedTabId] = useState<number | null>(null);
   const [editingGroup, setEditingGroup] = useState<CustomGroupConfig | undefined>();
   const [tabsForNewGroup, setTabsForNewGroup] = useState<TabInfo[]>([]);
   const { toast } = useToast();
@@ -243,29 +247,14 @@ export function SidePanel() {
   }, [loadTabs, loadCustomGroups, loadGroupingSettings, loadImportantTabs]);
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-
-      const isTypingElsewhere =
-        target.isContentEditable ||
-        target.tagName === 'TEXTAREA' ||
-        (target.tagName === 'INPUT' && target !== searchInputRef.current);
-
-      if (isTypingElsewhere) return;
-
-      const isSlash =
-        event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey;
-
-      if (!isSlash) return;
-
-      event.preventDefault();
-      searchInputRef.current?.focus();
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    if (selectedTabId == null) return;
+    const row = document.querySelector<HTMLElement>(`[data-tab-id="${selectedTabId}"]`);
+    if (!row) return;
+    row.scrollIntoView({ block: 'nearest' });
+    if (document.activeElement !== searchInputRef.current) {
+      row.focus({ preventScroll: true });
+    }
+  }, [selectedTabId]);
 
   // Clean up dead tabs from groups when tabs change
   useEffect(() => {
@@ -343,6 +332,7 @@ export function SidePanel() {
   };
 
   const handleTabClick = (tabId: number) => {
+    setSelectedTabId(tabId);
     chrome.tabs.update(tabId, { active: true });
     chrome.tabs.get(tabId, (tab) => {
       if (tab.windowId) {
@@ -648,6 +638,25 @@ export function SidePanel() {
     buildGroups,
   ]);
 
+  const keyboardTabIds = useMemo(
+    () => sections.flatMap((section) => orderedTabIds(section.groups)),
+    [sections]
+  );
+
+  useEffect(() => {
+    if (selectedTabId == null) return;
+    if (!keyboardTabIds.includes(selectedTabId)) setSelectedTabId(keyboardTabIds[0] ?? null);
+  }, [selectedTabId, keyboardTabIds]);
+
+  useEffect(() => {
+    if (selectedTabId == null) return;
+    const section = sections.find((item) =>
+      item.groups.some((group) => group.tabs.some((tab) => tab.id === selectedTabId))
+    );
+    if (section?.windowId == null || !collapsedWindows.includes(section.windowId)) return;
+    setCollapsedWindows((current) => current.filter((id) => id !== section.windowId));
+  }, [selectedTabId, sections, collapsedWindows]);
+
   const allGroups = useMemo(
     () => sections.flatMap((section) => section.groups),
     [sections]
@@ -890,6 +899,182 @@ export function SidePanel() {
     );
   };
 
+  const shortcutApiRef = useRef<{
+    showGroupDialog: boolean;
+    paletteOpen: boolean;
+    searchQuery: string;
+    selectedTabId: number | null;
+    tabs: TabInfo[];
+    openTab: (tabId: number) => void;
+    closeTab: (tabId: number) => void;
+    sleepTab: (tabId: number) => void;
+    reloadTab: (tabId: number) => void;
+    newTab: () => void;
+    orderedIds: number[];
+  } | null>(null);
+  shortcutApiRef.current = {
+    showGroupDialog,
+    paletteOpen,
+    searchQuery,
+    selectedTabId,
+    tabs,
+    openTab: handleTabClick,
+    closeTab: handleCloseTab,
+    sleepTab: (tabId) => void handleDiscardTab(tabId),
+    reloadTab: handleReloadTab,
+    newTab: handleCreateNewTab,
+    orderedIds: keyboardTabIds,
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const api = shortcutApiRef.current;
+      if (!api || api.showGroupDialog) return;
+
+      const paletteChord =
+        event.key.toLowerCase() === 'k' &&
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey &&
+        !event.shiftKey;
+      if (api.paletteOpen) {
+        if (paletteChord) {
+          event.preventDefault();
+          setPaletteOpen(false);
+        }
+        return;
+      }
+
+      const inSearch = target === searchInputRef.current;
+      const typingElsewhere =
+        !inSearch &&
+        (target.isContentEditable ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.tagName === 'INPUT');
+      if (typingElsewhere) return;
+
+      if (paletteChord) {
+        event.preventDefault();
+        setPaletteOpen(true);
+        return;
+      }
+
+      const action = shortcutAction(event, inSearch ? 'search' : 'idle');
+      if (!action || action === 'open-palette') return;
+
+      const ids = api.orderedIds;
+      const selected = api.tabs.find((tab) => tab.id === api.selectedTabId) ?? null;
+
+      if (action === 'move-next' || action === 'move-prev') {
+        event.preventDefault();
+        setSelectedTabId(nextSelectedId(ids, api.selectedTabId, action === 'move-next' ? 1 : -1));
+        return;
+      }
+      if (action === 'open') {
+        if (api.selectedTabId == null) return;
+        event.preventDefault();
+        api.openTab(api.selectedTabId);
+        return;
+      }
+      if (action === 'close') {
+        if (api.selectedTabId == null) return;
+        event.preventDefault();
+        setSelectedTabId(selectionAfterClose(ids, api.selectedTabId));
+        api.closeTab(api.selectedTabId);
+        return;
+      }
+      if (action === 'sleep') {
+        if (!selected || !canSleepTab(selected)) return;
+        event.preventDefault();
+        api.sleepTab(selected.id);
+        return;
+      }
+      if (action === 'reload') {
+        if (!selected?.discarded) return;
+        event.preventDefault();
+        api.reloadTab(selected.id);
+        return;
+      }
+      if (action === 'new-tab') {
+        event.preventDefault();
+        api.newTab();
+        return;
+      }
+      if (action === 'focus-search') {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+      if (action === 'escape') {
+        event.preventDefault();
+        if (api.searchQuery) {
+          setSearchQuery('');
+          return;
+        }
+        if (inSearch) {
+          searchInputRef.current?.blur();
+          return;
+        }
+        setSelectedTabId(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const paletteActions: PaletteAction[] = [
+    { id: 'new-tab', label: 'New tab', hint: 'n', onSelect: handleCreateNewTab },
+    {
+      id: 'search',
+      label: 'Search tabs',
+      hint: '/',
+      onSelect: () => {
+        requestAnimationFrame(() => searchInputRef.current?.focus());
+      },
+    },
+    {
+      id: 'this-window',
+      label: 'This window',
+      onSelect: () => void handleWindowScopeChange('current'),
+    },
+    {
+      id: 'all-windows',
+      label: 'All windows',
+      onSelect: () => void handleWindowScopeChange('all'),
+    },
+    { id: 'create-group', label: 'Create group', onSelect: handleCreateGroup },
+    {
+      id: 'activity',
+      label: showActivity ? 'Hide activity' : 'Show activity',
+      onSelect: () => setShowActivity((current) => !current),
+    },
+  ];
+  if (discardCandidates.length > 0) {
+    paletteActions.push({
+      id: 'sleep-unused',
+      label: 'Sleep unused tabs',
+      onSelect: () => void handleDiscardStale(),
+    });
+  }
+  if (staleTabs.length > 0) {
+    paletteActions.push({
+      id: 'close-unused',
+      label: 'Close unused tabs',
+      onSelect: handleCloseStale,
+    });
+  }
+  if (extraDuplicateTabCount > 0) {
+    paletteActions.push({
+      id: 'close-duplicates',
+      label: 'Close duplicate extras',
+      onSelect: handleCloseDuplicates,
+    });
+  }
+
   return (
     <div className="w-full min-w-0 h-screen flex flex-col overflow-hidden p-2 bg-background box-border">
       <header className="mb-1.5 flex shrink-0 items-center justify-between gap-1.5 border-b border-hairline/70 bg-background/80 pb-1.5 backdrop-blur-md">
@@ -1038,6 +1223,7 @@ export function SidePanel() {
                   onMoveToWindow={(tabId, windowId) => void handleMoveToWindow(tabId, windowId)}
                   onMoveToNewWindow={(tabId) => void handleMoveToNewWindow(tabId)}
                   windowLabel={section.windowLabel}
+                  selectedTabId={selectedTabId}
                 />
               ));
               if (!section.showHeader || section.windowId == null) {
@@ -1053,7 +1239,12 @@ export function SidePanel() {
                   label={section.label}
                   tabCount={section.tabCount}
                   focused={section.focused}
-                  collapsed={collapsedWindows.includes(section.windowId)}
+                  collapsed={
+                    collapsedWindows.includes(section.windowId) &&
+                    !section.groups.some((group) =>
+                      group.tabs.some((tab) => tab.id === selectedTabId)
+                    )
+                  }
                   onToggle={() => toggleWindowCollapsed(section.windowId!)}
                   onFocus={() => handleFocusWindow(section.windowId!)}
                 >
@@ -1073,6 +1264,8 @@ export function SidePanel() {
         selectedTabs={tabsForNewGroup}
         allGroups={customGroups}
       />
+
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} actions={paletteActions} />
 
       <Toaster />
     </div>

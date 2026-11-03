@@ -26,6 +26,16 @@ describe('getDomainGroupName', () => {
   it('uses known domain mappings', () => {
     expect(getDomainGroupName('meet.google.com')).toBe('Google Meet');
   });
+
+  it('labels loopback addresses as Localhost instead of an octet', () => {
+    expect(getDomainGroupName('127.0.0.1')).toBe('Localhost');
+    expect(getDomainGroupName('localhost')).toBe('Localhost');
+    expect(getDomainGroupName('::1')).toBe('Localhost');
+  });
+
+  it('keeps a public IP as its own name', () => {
+    expect(getDomainGroupName('8.8.8.8')).toBe('8.8.8.8');
+  });
 });
 
 describe('getSubGroupLabel', () => {
@@ -50,6 +60,10 @@ describe('isApexHostname', () => {
   it('detects apex domains', () => {
     expect(isApexHostname('encatch.com')).toBe(true);
     expect(isApexHostname('admin.encatch.com')).toBe(false);
+  });
+
+  it('treats IP addresses as a single host', () => {
+    expect(isApexHostname('127.0.0.1')).toBe(true);
   });
 });
 
