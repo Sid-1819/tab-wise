@@ -115,8 +115,18 @@ export function getStaleTabs<T extends StaleTabInput>(
   });
 }
 
+export function canSleepTab(tab: {
+  active?: boolean;
+  pinned?: boolean;
+  isImportant?: boolean;
+  discarded?: boolean;
+  audible?: boolean;
+}): boolean {
+  return !tab.active && !tab.pinned && !tab.isImportant && !tab.discarded && !tab.audible;
+}
+
 export function getDiscardCandidates<T extends StaleTabInput & { discarded?: boolean; audible?: boolean }>(
   staleTabs: T[]
 ): T[] {
-  return staleTabs.filter((tab) => !tab.discarded && !tab.audible);
+  return staleTabs.filter((tab) => canSleepTab(tab));
 }

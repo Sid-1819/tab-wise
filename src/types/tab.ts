@@ -21,9 +21,19 @@ export interface TabInfo {
   lastAccessed?: number;
   activity?: TabActivity; // Activity tracking data
   isImportant?: boolean; // Whether the tab is marked as important
+  /** Chrome tabGroups id, when the tab is inside a native group. */
+  chromeGroupId?: number;
 }
 
-export type GroupType = 'automatic' | 'custom';
+export interface ChromeTabGroupInput {
+  id: number;
+  title?: string;
+  /** Hex color already mapped from Chrome's named group color. */
+  color?: string;
+  collapsed?: boolean;
+}
+
+export type GroupType = 'automatic' | 'custom' | 'chrome';
 export type AutoGroupStrategy = 'domain' | 'content-similarity' | 'time-of-day' | 'activity-pattern' | 'project-context' | 'last-used';
 
 export interface TabSubGroup {
@@ -46,6 +56,8 @@ export interface TabGroup {
   customName?: string; // User-defined name for custom groups
   color?: string; // Custom color for the group
   isImportant?: boolean; // Whether the group is marked as important
+  /** Chrome's collapsed state, used only for mirrored Chrome groups. */
+  collapsed?: boolean;
 
   // Auto-grouping metadata
   autoGroupStrategy?: AutoGroupStrategy; // Strategy used for auto-grouping
@@ -76,6 +88,7 @@ export interface GroupingSettings {
   autoGroupStrategies: AutoGroupStrategy[];
   defaultGroupType: GroupType;
   showNestedGroups: boolean;
+  showChromeGroups?: boolean;
   lastUsedInterval?: number; // Hours for last-used grouping (1, 2, 3, or 4)
   autoDeleteThreshold?: number; // Milliseconds - threshold for auto-delete grouping
   enableAutoDeleteGrouping?: boolean; // Whether to show auto-delete group
@@ -86,6 +99,7 @@ export const DEFAULT_GROUPING_SETTINGS: GroupingSettings = {
   autoGroupStrategies: ['domain'],
   defaultGroupType: 'automatic',
   showNestedGroups: true,
+  showChromeGroups: true,
   lastUsedInterval: 1,
   autoDeleteThreshold: 24 * 60 * 60 * 1000, // 24 hours
   enableAutoDeleteGrouping: false,

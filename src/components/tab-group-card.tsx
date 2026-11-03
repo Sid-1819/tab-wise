@@ -23,6 +23,7 @@ interface TabGroupCardProps {
   onToggleTabImportant?: (tabId: number) => void;
   onTogglePin?: (tabId: number) => void;
   onReloadTab?: (tabId: number) => void;
+  onSleepTab?: (tabId: number) => void;
   moveTargets?: { id: number; label: string }[];
   onMoveToWindow?: (tabId: number, windowId: number) => void;
   onMoveToNewWindow?: (tabId: number) => void;
@@ -97,6 +98,7 @@ export function TabGroupCard({
   onToggleTabImportant,
   onTogglePin,
   onReloadTab,
+  onSleepTab,
   moveTargets = [],
   onMoveToWindow,
   onMoveToNewWindow,
@@ -104,8 +106,9 @@ export function TabGroupCard({
   customGroups = [],
 }: TabGroupCardProps) {
   const isCustomGroup = group.type === 'custom';
-  const isSingleAutoGroup = group.tabs.length === 1 && !isCustomGroup;
-  const [collapsed, setCollapsed] = useState(false);
+  const isChromeGroup = group.type === 'chrome';
+  const isSingleAutoGroup = group.tabs.length === 1 && group.type === 'automatic';
+  const [collapsed, setCollapsed] = useState(isChromeGroup && !!group.collapsed);
 
   const handleCloseAll = () => {
     const tabIds = group.tabs.map((tab) => tab.id);
@@ -131,6 +134,7 @@ export function TabGroupCard({
     onToggleImportant: onToggleTabImportant,
     onTogglePin,
     onReload: onReloadTab,
+    onSleep: onSleepTab,
     moveTargets,
     onMoveToWindow,
     onMoveToNewWindow,
@@ -189,10 +193,10 @@ export function TabGroupCard({
             )}
           />
         )}
-        {!isCustomGroup && (
+        {!isCustomGroup && !isChromeGroup && (
           <FaviconImg src={group.favicon} className="h-3.5 w-3.5 shrink-0 rounded" />
         )}
-        {isCustomGroup && group.color && (
+        {(isCustomGroup || isChromeGroup) && group.color && (
           <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center" aria-hidden>
             <span
               className="h-2 w-2 rounded-full"
@@ -212,7 +216,7 @@ export function TabGroupCard({
         )}
       </button>
       <div className="flex shrink-0 items-center gap-0">
-        {!isCustomGroup && onConvertToCustom && (
+        {!isCustomGroup && !isChromeGroup && onConvertToCustom && (
           <Button
             variant="ghost"
             size="icon"

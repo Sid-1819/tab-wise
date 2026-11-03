@@ -1,4 +1,4 @@
-import { X, MoreVertical, FolderPlus, FolderMinus, Copy, Shield, Pin, RotateCw, ArrowRightLeft } from 'lucide-react';
+import { X, MoreVertical, FolderPlus, FolderMinus, Copy, Shield, Pin, RotateCw, ArrowRightLeft, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/popover';
 import { TabInfo, CustomGroupConfig } from '@/types/tab';
 import type { TabActivity } from '@/lib/activity-types';
+import { canSleepTab } from '@/lib/activity-format';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -23,6 +24,7 @@ interface TabItemProps {
   onToggleImportant?: (tabId: number) => void;
   onTogglePin?: (tabId: number) => void;
   onReload?: (tabId: number) => void;
+  onSleep?: (tabId: number) => void;
   moveTargets?: { id: number; label: string }[];
   onMoveToWindow?: (tabId: number, windowId: number) => void;
   onMoveToNewWindow?: (tabId: number) => void;
@@ -45,6 +47,7 @@ export function TabItem({
   onToggleImportant,
   onTogglePin,
   onReload,
+  onSleep,
   moveTargets = [],
   onMoveToWindow,
   onMoveToNewWindow,
@@ -77,6 +80,7 @@ export function TabItem({
   // Check if this tab is currently active
   const isActive = tab.active === true;
 
+  const showSleep = !!onSleep && canSleepTab(tab);
   const otherWindows = moveTargets.filter((target) => target.id !== tab.windowId);
   const canMove = !!onMoveToWindow || !!onMoveToNewWindow;
 
@@ -87,6 +91,7 @@ export function TabItem({
     !!onToggleImportant ||
     !!onTogglePin ||
     (!!tab.discarded && !!onReload) ||
+    showSleep ||
     canMove;
 
   const tabActionBtn = 'h-5 w-5 shrink-0 p-0';
@@ -188,6 +193,20 @@ export function TabItem({
               >
                 <Pin className="h-3 w-3" />
                 <span>{tab.pinned ? 'Unpin tab' : 'Pin tab'}</span>
+              </button>
+            )}
+
+            {showSleep && (
+              <button
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSleep?.(tab.id);
+                  setMenuOpen(false);
+                }}
+              >
+                <Moon className="h-3 w-3" />
+                <span>Sleep</span>
               </button>
             )}
 
@@ -308,6 +327,7 @@ export function TabItem({
               !onToggleImportant &&
               !onTogglePin &&
               !(tab.discarded && onReload) &&
+              !showSleep &&
               !canMove && (
               <div className="text-xs text-muted-foreground px-2 py-2">
                 No groups available. Create a group first.

@@ -25,6 +25,9 @@ interface GroupToolbarProps {
   onAutoDeleteThresholdChange?: (threshold: number) => void;
   showNestedGroups?: boolean;
   onShowNestedGroupsChange?: (enabled: boolean) => void;
+  chromeGroupsAvailable?: boolean;
+  showChromeGroups?: boolean;
+  onShowChromeGroupsChange?: (enabled: boolean) => void;
 }
 
 const STRATEGY_LABELS: Record<AutoGroupStrategy, string> = {
@@ -123,6 +126,9 @@ export function GroupToolbar({
   onAutoDeleteThresholdChange,
   showNestedGroups = true,
   onShowNestedGroupsChange,
+  chromeGroupsAvailable = false,
+  showChromeGroups = true,
+  onShowChromeGroupsChange,
 }: GroupToolbarProps) {
   return (
     <>
@@ -219,6 +225,16 @@ export function GroupToolbar({
                   />
                 )}
               </div>
+            )}
+
+            {chromeGroupsAvailable && onShowChromeGroupsChange && (
+              <SettingRow
+                id="chrome-groups"
+                title="Chrome groups"
+                description="Show groups created in Chrome"
+                checked={showChromeGroups}
+                onCheckedChange={onShowChromeGroupsChange}
+              />
             )}
 
             <SettingRow
