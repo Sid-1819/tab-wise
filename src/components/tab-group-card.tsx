@@ -23,12 +23,15 @@ interface TabGroupCardProps {
   onToggleTabImportant?: (tabId: number) => void;
   onTogglePin?: (tabId: number) => void;
   onReloadTab?: (tabId: number) => void;
+  onSleepTab?: (tabId: number) => void;
   moveTargets?: { id: number; label: string }[];
   onMoveToWindow?: (tabId: number, windowId: number) => void;
   onMoveToNewWindow?: (tabId: number) => void;
   /** Shown on each tab when this window is a single row, not a section. */
   windowLabel?: string;
   customGroups?: CustomGroupConfig[];
+  selectedNavKey?: string | null;
+  onSelectRow?: (navKey: string) => void;
 }
 
 const groupActionBtn =
@@ -39,12 +42,23 @@ const groupCloseBtn =
 
 interface TabSubGroupSectionProps {
   subgroup: TabSubGroup;
-  tabItemProps: (tab: TabSubGroup['tabs'][0]) => ComponentProps<typeof TabItem>;
+  groupId: string;
+  tabItemProps: (tab: TabSubGroup['tabs'][0], scope: string) => ComponentProps<typeof TabItem>;
+  selectedNavKey?: string | null;
 }
 
-function TabSubGroupSection({ subgroup, tabItemProps }: TabSubGroupSectionProps) {
+function TabSubGroupSection({
+  subgroup,
+  groupId,
+  tabItemProps,
+  selectedNavKey,
+}: TabSubGroupSectionProps) {
   const [collapsed, setCollapsed] = useState(false);
   const hasMultipleTabs = subgroup.tabs.length > 1;
+  const navPrefix = `${groupId}:${subgroup.id}:`;
+  if (collapsed && selectedNavKey?.startsWith(navPrefix)) {
+    setCollapsed(false);
+  }
 
   return (
     <div className="space-y-0.5">
@@ -74,7 +88,7 @@ function TabSubGroupSection({ subgroup, tabItemProps }: TabSubGroupSectionProps)
       {!collapsed && (
         <div className="space-y-0.5 pl-3">
           {subgroup.tabs.map((tab) => (
-            <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
+            <TabItem key={tab.id} {...tabItemProps(tab, subgroup.id)} nestedInGroup />
           ))}
         </div>
       )}
@@ -97,15 +111,22 @@ export function TabGroupCard({
   onToggleTabImportant,
   onTogglePin,
   onReloadTab,
+  onSleepTab,
   moveTargets = [],
   onMoveToWindow,
   onMoveToNewWindow,
   windowLabel,
   customGroups = [],
+  selectedNavKey = null,
+  onSelectRow,
 }: TabGroupCardProps) {
   const isCustomGroup = group.type === 'custom';
-  const isSingleAutoGroup = group.tabs.length === 1 && !isCustomGroup;
-  const [collapsed, setCollapsed] = useState(false);
+  const isChromeGroup = group.type === 'chrome';
+  const isSingleAutoGroup = group.tabs.length === 1 && group.type === 'automatic';
+  const [collapsed, setCollapsed] = useState(isChromeGroup && !!group.collapsed);
+  if (collapsed && selectedNavKey?.startsWith(`${group.id}:`)) {
+    setCollapsed(false);
+  }
 
   const handleCloseAll = () => {
     const tabIds = group.tabs.map((tab) => tab.id);
@@ -119,26 +140,33 @@ export function TabGroupCard({
     borderLeftWidth: '3px',
   } as const;
 
-  const tabItemProps = (tab: (typeof group.tabs)[0]) => ({
-    tab,
-    onClose: onCloseTab,
-    onClick: onTabClick,
-    onDuplicate: onDuplicateTab,
-    customGroups,
-    currentGroupId: isCustomGroup ? group.id : undefined,
-    onAddToGroup: onAddTabToGroup,
-    onRemoveFromGroup: onRemoveTabFromGroup,
-    onToggleImportant: onToggleTabImportant,
-    onTogglePin,
-    onReload: onReloadTab,
-    moveTargets,
-    onMoveToWindow,
-    onMoveToNewWindow,
-    windowLabel,
-  });
+  const tabItemProps = (tab: (typeof group.tabs)[0], scope: string) => {
+    const navKey = `${group.id}:${scope}:${tab.id}`;
+    return {
+      tab,
+      onClose: onCloseTab,
+      onClick: onTabClick,
+      onDuplicate: onDuplicateTab,
+      customGroups,
+      currentGroupId: isCustomGroup ? group.id : undefined,
+      onAddToGroup: onAddTabToGroup,
+      onRemoveFromGroup: onRemoveTabFromGroup,
+      onToggleImportant: onToggleTabImportant,
+      onTogglePin,
+      onReload: onReloadTab,
+      onSleep: onSleepTab,
+      moveTargets,
+      onMoveToWindow,
+      onMoveToNewWindow,
+      windowLabel,
+      navKey,
+      selected: selectedNavKey === navKey,
+      onSelectRow,
+    };
+  };
 
   if (isSingleAutoGroup && group.tabs.length === 1) {
-    return <TabItem {...tabItemProps(group.tabs[0])} />;
+    return <TabItem {...tabItemProps(group.tabs[0], 'row')} />;
   }
 
   const hasSubgroups = (group.subgroups?.length ?? 0) >= 2;
@@ -160,16 +188,18 @@ export function TabGroupCard({
           <TabSubGroupSection
             key={subgroup.id}
             subgroup={subgroup}
+            groupId={group.id}
             tabItemProps={tabItemProps}
+            selectedNavKey={selectedNavKey}
           />
         ))}
         {orphanTabs.map((tab) => (
-          <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
+          <TabItem key={tab.id} {...tabItemProps(tab, 'orphan')} nestedInGroup />
         ))}
       </>
     ) : (
       group.tabs.map((tab) => (
-        <TabItem key={tab.id} {...tabItemProps(tab)} nestedInGroup />
+        <TabItem key={tab.id} {...tabItemProps(tab, 'list')} nestedInGroup />
       ))
     );
 
@@ -189,10 +219,10 @@ export function TabGroupCard({
             )}
           />
         )}
-        {!isCustomGroup && (
+        {!isCustomGroup && !isChromeGroup && (
           <FaviconImg src={group.favicon} className="h-3.5 w-3.5 shrink-0 rounded" />
         )}
-        {isCustomGroup && group.color && (
+        {(isCustomGroup || isChromeGroup) && group.color && (
           <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center" aria-hidden>
             <span
               className="h-2 w-2 rounded-full"
@@ -212,7 +242,7 @@ export function TabGroupCard({
         )}
       </button>
       <div className="flex shrink-0 items-center gap-0">
-        {!isCustomGroup && onConvertToCustom && (
+        {!isCustomGroup && !isChromeGroup && onConvertToCustom && (
           <Button
             variant="ghost"
             size="icon"

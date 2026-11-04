@@ -5,6 +5,7 @@ import {
   CustomGroupConfig,
   TabGroup,
   TabSubGroup,
+  ChromeTabGroupInput,
 } from '@/types/tab';
 import { scoreTab } from '@/lib/fuzzy-match';
 import { getTabFaviconUrl } from '@/lib/favicon';
@@ -27,7 +28,10 @@ export function groupTabs(
   lastUsedInterval: number = 1,
   enableAutoDelete: boolean = false,
   autoDeleteThreshold: number = 24 * 60 * 60 * 1000,
-  showNestedGroups: boolean = true
+  showNestedGroups: boolean = true,
+  enableAutoGrouping: boolean = true,
+  showChromeGroups: boolean = false,
+  chromeGroups: ChromeTabGroupInput[] = []
 ): GroupedTabs {
   const groups: GroupedTabs = {};
 
@@ -56,10 +60,54 @@ export function groupTabs(
     groupTabs.forEach((tab) => tabsInCustomGroups.add(tab.id));
   });
 
-  // Then, apply auto-grouping to remaining tabs
-  const remainingTabs = tabs.filter((tab) => !tabsInCustomGroups.has(tab.id));
+  const tabsInChromeGroups = new Set<number>();
+  if (showChromeGroups && chromeGroups.length > 0) {
+    const metaById = new Map(chromeGroups.map((group) => [group.id, group]));
+    for (const meta of chromeGroups) {
+      const members = tabs
+        .filter(
+          (tab) =>
+            tab.chromeGroupId === meta.id &&
+            !tabsInCustomGroups.has(tab.id) &&
+            metaById.has(meta.id)
+        )
+        .sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+      if (members.length === 0) continue;
+      const title = meta.title?.trim() || 'Tab group';
+      const groupKey = `chrome_${meta.id}`;
+      groups[groupKey] = {
+        id: groupKey,
+        domain: title,
+        tabs: members,
+        type: 'chrome',
+        customName: title,
+        color: meta.color,
+        collapsed: meta.collapsed,
+        createdAt: Date.now(),
+      };
+      members.forEach((tab) => tabsInChromeGroups.add(tab.id));
+    }
+  }
 
-  if (strategy === 'domain') {
+  // Then, apply auto-grouping to remaining tabs. When auto-grouping is off,
+  // each leftover tab stays on its own so the list renders as flat rows.
+  const remainingTabs = tabs.filter(
+    (tab) => !tabsInCustomGroups.has(tab.id) && !tabsInChromeGroups.has(tab.id)
+  );
+
+  if (!enableAutoGrouping) {
+    remainingTabs.forEach((tab) => {
+      const groupKey = `flat_${tab.id}`;
+      groups[groupKey] = {
+        id: groupKey,
+        domain: tab.title || tab.url,
+        tabs: [tab],
+        type: 'automatic',
+        createdAt: tab.lastAccessed ?? Date.now(),
+        favicon: getTabFaviconUrl(tab.url),
+      };
+    });
+  } else if (strategy === 'domain') {
     groupByDomain(remainingTabs, groups, showNestedGroups);
   } else if (strategy === 'content-similarity') {
     groupByContentSimilarity(remainingTabs, groups);
