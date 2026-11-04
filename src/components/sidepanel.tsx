@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { RecentlyClosed } from '@/components/recently-closed';
 import { SavedSessions } from '@/components/saved-sessions';
 import { DuplicateBanner } from '@/components/duplicate-banner';
+import { WhatsNewBanner } from '@/components/whats-new-banner';
 import { StaleTabsBanner } from '@/components/stale-tabs-banner';
 import { WindowSection } from '@/components/window-section';
 import { SystemMemoryBar } from '@/components/system-memory-bar';
@@ -60,6 +61,11 @@ import { getTabFaviconUrl } from '@/lib/favicon';
 import { nextIndex, shortcutAction } from '@/lib/shortcuts';
 import { CommandPalette, type PaletteAction } from '@/components/command-palette';
 import { cn } from '@/lib/utils';
+import {
+  clearPendingWhatsNew,
+  getPendingWhatsNew,
+  type PendingWhatsNew,
+} from '@/lib/release-landing';
 import { useToast } from '@/components/ui/use-toast';
 
 const FEEDBACK_URL = 'https://form.encatch.com/s/a29991a5-0c38-48c0-8fd8-61462f58821c';
@@ -107,6 +113,7 @@ export function SidePanel() {
   const prevDuplicateSigRef = useRef<string>('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [duplicateDismissSig, setDuplicateDismissSig] = useState<string | null>(null);
+  const [pendingWhatsNew, setPendingWhatsNew] = useState<PendingWhatsNew | null>(null);
 
   const [tabs, setTabs] = useState<TabInfo[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -209,6 +216,15 @@ export function SidePanel() {
   const loadImportantTabs = useCallback(async () => {
     const tabs = await getImportantTabs();
     setImportantTabs(tabs);
+  }, []);
+
+  const dismissWhatsNew = useCallback(() => {
+    setPendingWhatsNew(null);
+    void clearPendingWhatsNew();
+  }, []);
+
+  useEffect(() => {
+    void getPendingWhatsNew().then(setPendingWhatsNew);
   }, []);
 
   useEffect(() => {
@@ -1173,6 +1189,14 @@ export function SidePanel() {
               onShowChromeGroupsChange={(enabled) => void handleShowChromeGroupsChange(enabled)}
             />
           </div>
+
+          {pendingWhatsNew && (
+            <WhatsNewBanner
+              pending={pendingWhatsNew}
+              onOpen={dismissWhatsNew}
+              onDismiss={dismissWhatsNew}
+            />
+          )}
 
           {showDuplicateBanner && (
             <DuplicateBanner

@@ -9,6 +9,12 @@ import {
   getActivityData,
 } from './lib/activity-storage';
 import type { ActivityData } from './lib/activity-types';
+import {
+  changelogUrl,
+  isMajorBump,
+  setPendingWhatsNew,
+  welcomeUrl,
+} from './lib/release-landing';
 
 // Message types for communication between sidepanel and background
 export interface BackgroundMessage {
@@ -27,12 +33,39 @@ let cachedTabs: chrome.tabs.Tab[] = [];
 let activeTabId: number | null = null;
 let activeTabStartTime: number | null = null;
 
-// Initialize extension
-chrome.runtime.onInstalled.addListener(() => {
+// Initialize extension and announce install or update
+chrome.runtime.onInstalled.addListener((details) => {
   console.log('Tab Wise extension installed');
   refreshTabs();
-  cleanupOldActivity(); // Clean old activity data on install
+  cleanupOldActivity();
+  chrome.contextMenus.create({
+    id: 'openTabWiseSidePanel',
+    title: 'Open Tab Wise in Side Panel',
+    contexts: ['page', 'action'],
+  });
+  void openReleaseLanding(details);
 });
+
+async function openReleaseLanding(details: chrome.runtime.InstalledDetails) {
+  if (details.reason === 'install') {
+    await chrome.tabs.create({ url: welcomeUrl() });
+    return;
+  }
+
+  if (details.reason !== 'update' || !details.previousVersion) return;
+
+  const current = chrome.runtime.getManifest().version;
+  if (details.previousVersion === current) return;
+
+  await setPendingWhatsNew({ from: details.previousVersion, to: current });
+
+  if (!isMajorBump(details.previousVersion, current)) return;
+
+  const url = changelogUrl(details.previousVersion, current);
+  const existing = await chrome.tabs.query({ url });
+  if (existing.length > 0) return;
+  await chrome.tabs.create({ url });
+}
 
 // Cleanup old activity data periodically (every hour)
 setInterval(() => {
@@ -216,15 +249,6 @@ initializeActiveTab();
 // Set up side panel behavior - open on action click (extension icon)
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {
   // Side panel API might not be available in older Chrome versions
-});
-
-// Create context menu for opening side panel
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: 'openTabWiseSidePanel',
-    title: 'Open Tab Wise in Side Panel',
-    contexts: ['page', 'action'],
-  });
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
