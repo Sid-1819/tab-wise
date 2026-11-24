@@ -12,7 +12,8 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 
 - **Smart Tab Search** 
 - **Tab Grouping** — Organize tabs with domain-based auto-grouping and manual group creation. Refer to 'Auto-Grouping Strategies' for details.
-- **Saved Sessions** 
+- **Workspaces** — One place per project: saved pages, notes, focus and next step. Tab Wise notices when a window looks like one project, remembers where you left off, and offers a welcome-back card. Right-click any page, link or selection to add it; `Alt+Shift+W` adds the current tab; `Ctrl/Cmd+K` then "switch to" jumps between projects. Saved sessions from earlier versions live here as archived workspaces.
+- **Privacy & data** — Turn off remembering windows or website access, see exactly what is stored, export/import a backup, and clear history. Everything stays on your device.
 - **Recently Closed** 
 - **Duplicate Detection** 
 - **Activity Tracking** 
@@ -81,7 +82,7 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 2. Search tabs using the search bar — press `/` while the side panel is focused to jump to search
 3. Click a tab to switch to it, or close individual tabs
 4. Use group actions to close, favorite, or reorganize tabs
-5. Save and restore sessions from the sessions panel
+5. Open Workspaces to save a project (or "Save window"), then pick it up later
 6. Toggle theme from the header
 
 ---
@@ -92,7 +93,7 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 Ensure you are on a compatible web page. Chrome's Side Panel API does not function on certain internal browser pages (e.g., chrome://settings). If it fails on standard pages, try reloading the extension in `chrome://extensions/`.
 
 ### How do I reset my data?
-Tab Wise stores data locally. You can reset your saved sessions and preferences by navigating to `chrome://extensions/`, clicking the 'Details' button for Tab Wise, and selecting 'Clear site data'.
+Tab Wise stores data locally. You can export, clear or delete your workspaces from the Privacy & data panel, or reset everything by navigating to `chrome://extensions/`, clicking the 'Details' button for Tab Wise, and selecting 'Clear site data'.
 
 ### Reporting Issues
 If you encounter persistent bugs (such as #46 or #30), please check our [GitHub Issues](https://github.com/Sid-1819/tab-wise/issues) to see if a fix is already in progress, or open a new ticket with your Chrome version and a description of the issue.
@@ -129,7 +130,8 @@ tab-wise/
 │   │   ├── ui/                 # shadcn/ui primitives
 │   │   ├── sidepanel.tsx       # Main side panel layout
 │   │   ├── tab-group-card.tsx  # Grouped tab cards
-│   │   ├── saved-sessions.tsx  # Session save/restore
+│   │   ├── workspaces-view.tsx # Workspaces list and detail
+│   │   ├── privacy-dialog.tsx  # Privacy & data controls
 │   │   └── ...
 │   ├── hooks/                  # React hooks (activity, memory)
 │   ├── lib/                    # Tab utils, storage, session capture

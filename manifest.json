@@ -3,9 +3,12 @@
   "name": "Tab Wise",
   "version": "2.6.0",
   "description": "Organize and manage your Chrome tabs efficiently with a modern React interface",
-  "permissions": ["tabs", "tabGroups", "storage", "sidePanel", "contextMenus", "sessions", "favicon"],
+  "permissions": ["tabs", "tabGroups", "storage", "sidePanel", "contextMenus", "sessions", "favicon", "unlimitedStorage"],
   "optional_permissions": ["system.memory"],
   "host_permissions": ["<all_urls>"],
+  "externally_connectable": {
+    "matches": ["https://tabwise.visionly.dev/*", "http://localhost:3000/*"]
+  },
   "action": {
     "default_title": "Open Tab Wise"
   },
@@ -16,6 +19,13 @@
         "mac": "Alt+Shift+Y"
       },
       "description": "Open Tab Wise"
+    },
+    "add-to-workspace": {
+      "suggested_key": {
+        "default": "Alt+Shift+W",
+        "mac": "Alt+Shift+W"
+      },
+      "description": "Add this page to its workspace"
     }
   },
   "side_panel": {

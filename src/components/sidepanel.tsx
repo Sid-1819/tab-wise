@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useTheme } from 'next-themes';
-import { MessageSquare, Plus, BarChart2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SearchBar } from '@/components/search-bar';
 import { TabGroupCard } from '@/components/tab-group-card';
@@ -9,9 +9,12 @@ import { ActivityStats } from '@/components/activity-stats';
 import { Toaster } from '@/components/ui/toaster';
 import { GroupToolbar } from '@/components/group-toolbar';
 import { GroupDialog } from '@/components/group-dialog';
-import { Button } from '@/components/ui/button';
 import { RecentlyClosed } from '@/components/recently-closed';
-import { SavedSessions } from '@/components/saved-sessions';
+import { WorkspacesView } from '@/components/workspaces-view';
+import { ResumeAndSuggest } from '@/components/resume-and-suggest';
+import { HeaderMenu } from '@/components/header-menu';
+import { PrivacyDialog } from '@/components/privacy-dialog';
+import { TourCard } from '@/components/tour-card';
 import { DuplicateBanner } from '@/components/duplicate-banner';
 import { WhatsNewBanner } from '@/components/whats-new-banner';
 import { StaleTabsBanner } from '@/components/stale-tabs-banner';
@@ -67,6 +70,8 @@ import {
   type PendingWhatsNew,
 } from '@/lib/release-landing';
 import { useToast } from '@/components/ui/use-toast';
+import { useWorkspaceList } from '@/hooks/use-workspace-list';
+import { switchToWorkspace } from '@/lib/workspace-switch-browser';
 
 const FEEDBACK_URL = 'https://form.encatch.com/s/a29991a5-0c38-48c0-8fd8-61462f58821c';
 
@@ -109,7 +114,7 @@ function SidePanelWordmark({ tabCount, groupCount }: { tabCount: number; groupCo
   );
 }
 
-export function SidePanel() {
+export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | 'popup' } = {}) {
   const prevDuplicateSigRef = useRef<string>('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [duplicateDismissSig, setDuplicateDismissSig] = useState<string | null>(null);
@@ -137,10 +142,12 @@ export function SidePanel() {
   const [collapsedWindows, setCollapsedWindows] = useState<number[]>([]);
   const [showGroupDialog, setShowGroupDialog] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [view, setView] = useState<'tabs' | 'workspaces'>('tabs');
   const [selectedNavKey, setSelectedNavKey] = useState<string | null>(null);
   const [editingGroup, setEditingGroup] = useState<CustomGroupConfig | undefined>();
   const [tabsForNewGroup, setTabsForNewGroup] = useState<TabInfo[]>([]);
   const { toast } = useToast();
+  const workspaceList = useWorkspaceList();
 
   const loadTabs = useCallback(async () => {
     const [chromeTabs, chromeWindows, current] = await Promise.all([
@@ -1058,6 +1065,27 @@ export function SidePanel() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // "Switch to <project>": focus its window if open, else reopen it. Type a name to filter.
+  const switchActions: PaletteAction[] = workspaceList
+    .filter((x) => !x.archived)
+    .slice(0, 12)
+    .map((w) => ({
+      id: `switch-${w.id}`,
+      label: `Switch to ${w.name}`,
+      hint: 'project',
+      onSelect: () => {
+        void switchToWorkspace(w)
+          .then((r) => {
+            if (r.mode === 'opened' && r.tabs === 0) {
+              toast({ title: 'Nothing to open', description: `“${w.name}” has no pages yet.`, variant: 'destructive' });
+            }
+            loadTabs();
+          })
+          .catch((e) =>
+            toast({ title: 'Could not switch', description: e instanceof Error ? e.message : 'Unknown error', variant: 'destructive' }),
+          );
+      },
+    }));
   const paletteActions: PaletteAction[] = [
     { id: 'new-tab', label: 'New tab', hint: 'n', onSelect: handleCreateNewTab },
     {
@@ -1084,6 +1112,7 @@ export function SidePanel() {
       label: showActivity ? 'Hide activity' : 'Show activity',
       onSelect: () => setShowActivity((current) => !current),
     },
+    ...switchActions,
   ];
   if (discardCandidates.length > 0) {
     paletteActions.push({
@@ -1112,32 +1141,53 @@ export function SidePanel() {
       <header className="mb-1.5 flex shrink-0 items-center justify-between gap-1.5 border-b border-hairline/70 bg-background/80 pb-1.5 backdrop-blur-md">
         <SidePanelWordmark tabCount={filteredTabs.length} groupCount={totalGroups} />
         <div className="flex shrink-0 items-center gap-0.5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            aria-label="Send feedback or report a bug"
-            onClick={() => chrome.tabs.create({ url: FEEDBACK_URL })}
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            aria-label={showActivity ? 'Hide activity stats' : 'Show activity stats'}
-            title={showActivity ? 'Hide activity stats' : 'Show activity stats'}
-            onClick={() => setShowActivity(!showActivity)}
-          >
-            <BarChart2 className={cn('h-3.5 w-3.5', showActivity && 'text-primary')} />
-          </Button>
+          <PrivacyDialog />
           <ThemeSwitcher />
+          <HeaderMenu
+            surface={surface}
+            showActivity={showActivity}
+            onToggleActivity={setShowActivity}
+            activityAvailable={view === 'tabs'}
+            onFeedback={() => chrome.tabs.create({ url: FEEDBACK_URL })}
+          />
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+      <div className="mb-2 grid h-7 shrink-0 grid-cols-2 gap-0.5 rounded-md bg-muted/70 p-0.5" role="tablist" aria-label="Main view">
+        {(['tabs', 'workspaces'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={view === v}
+            className={cn(
+              'rounded-[5px] text-[11px] leading-none capitalize',
+              view === v
+                ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+            onClick={() => setView(v)}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+
+      <TourCard />
+      <ResumeAndSuggest
+        tabs={tabs}
+        chromeGroups={chromeGroups}
+        currentWindowId={currentWindowId}
+        onTabsChanged={loadTabs}
+      />
+
+      {view === 'workspaces' && (
+        <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <WorkspacesView onTabsChanged={loadTabs} />
+        </main>
+      )}
+
+      <main className={cn('flex-1 flex flex-col overflow-hidden min-h-0', view === 'workspaces' && 'hidden')}>
         <div className="shrink-0">
           <SearchBar ref={searchInputRef} value={searchQuery} onChange={setSearchQuery} />
 
@@ -1168,7 +1218,6 @@ export function SidePanel() {
             </button>
           </div>
           <div className="mb-2 flex flex-wrap items-center gap-1">
-            <SavedSessions onRestored={loadTabs} />
             <RecentlyClosed onRestored={loadTabs} />
             <GroupToolbar
               onCreateGroup={handleCreateGroup}
