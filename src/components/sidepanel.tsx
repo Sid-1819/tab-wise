@@ -1173,13 +1173,14 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
         ))}
       </div>
 
-      <TourCard />
       <ResumeAndSuggest
         tabs={tabs}
         chromeGroups={chromeGroups}
         currentWindowId={currentWindowId}
         onTabsChanged={loadTabs}
+        onFirstWorkspace={() => setView('workspaces')}
       />
+      <TourCard />
 
       {view === 'workspaces' && (
         <main className="flex-1 flex flex-col overflow-hidden min-h-0">
