@@ -13,6 +13,9 @@ import { RecentlyClosed } from '@/components/recently-closed';
 import { WorkspacesView } from '@/components/workspaces-view';
 import { ResumeAndSuggest } from '@/components/resume-and-suggest';
 import { HeaderMenu } from '@/components/header-menu';
+import { FocusCard } from '@/components/focus-card';
+import { useFocusSession } from '@/hooks/use-focus-session';
+import { endFocus } from '@/lib/focus-session';
 import { PrivacyDialog } from '@/components/privacy-dialog';
 import { TourCard } from '@/components/tour-card';
 import { DuplicateBanner } from '@/components/duplicate-banner';
@@ -142,6 +145,8 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
   const [collapsedWindows, setCollapsedWindows] = useState<number[]>([]);
   const [showGroupDialog, setShowGroupDialog] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const focusSession = useFocusSession();
+  const [focusSetupOpen, setFocusSetupOpen] = useState(false);
   const [view, setView] = useState<'tabs' | 'workspaces'>('tabs');
   const [selectedNavKey, setSelectedNavKey] = useState<string | null>(null);
   const [editingGroup, setEditingGroup] = useState<CustomGroupConfig | undefined>();
@@ -414,7 +419,16 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
     });
   };
 
+  const toggleFocus = () => {
+    if (focusSession) void endFocus();
+    else setFocusSetupOpen(true);
+  };
+
   const handleCreateNewTab = () => {
+    if (focusSession) {
+      toast({ title: 'Focus mode is on', description: 'New tabs are blocked until you end focus.' });
+      return;
+    }
     chrome.tabs.create({}, (newTab) => {
       if (chrome.runtime.lastError) {
         toast({
@@ -1107,6 +1121,7 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
       onSelect: () => void handleWindowScopeChange('all'),
     },
     { id: 'create-group', label: 'Create group', onSelect: handleCreateGroup },
+    { id: 'focus', label: focusSession ? 'End focus mode' : 'Start focus mode', onSelect: toggleFocus },
     {
       id: 'activity',
       label: showActivity ? 'Hide activity' : 'Show activity',
@@ -1149,6 +1164,8 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
             onToggleActivity={setShowActivity}
             activityAvailable={view === 'tabs'}
             onFeedback={() => chrome.tabs.create({ url: FEEDBACK_URL })}
+            focusActive={!!focusSession}
+            onFocus={toggleFocus}
           />
         </div>
       </header>
@@ -1173,6 +1190,13 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
         ))}
       </div>
 
+      <FocusCard
+        session={focusSession}
+        setupOpen={focusSetupOpen}
+        onSetupClose={() => setFocusSetupOpen(false)}
+        windowId={currentWindowId}
+        tabCount={tabs.filter((t) => t.windowId === currentWindowId).length}
+      />
       <ResumeAndSuggest
         tabs={tabs}
         chromeGroups={chromeGroups}

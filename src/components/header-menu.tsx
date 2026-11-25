@@ -25,10 +25,20 @@ interface HeaderMenuProps {
   /** Activity stats only apply to the Tabs view. */
   activityAvailable: boolean;
   onFeedback: () => void;
+  focusActive: boolean;
+  onFocus: () => void;
 }
 
 /** Everything that is not needed every minute lives behind one "more" button. */
-export function HeaderMenu({ surface, showActivity, onToggleActivity, activityAvailable, onFeedback }: HeaderMenuProps) {
+export function HeaderMenu({
+  surface,
+  showActivity,
+  onToggleActivity,
+  activityAvailable,
+  onFeedback,
+  focusActive,
+  onFocus,
+}: HeaderMenuProps) {
   const { mode, choose, openSidePanel } = useSurfaceChoice(surface);
 
   return (
@@ -39,6 +49,8 @@ export function HeaderMenu({ surface, showActivity, onToggleActivity, activityAv
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem onSelect={onFocus}>{focusActive ? 'End focus mode' : 'Start focus mode…'}</DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuCheckboxItem checked={showActivity} disabled={!activityAvailable} onCheckedChange={onToggleActivity}>
           Activity stats
         </DropdownMenuCheckboxItem>
