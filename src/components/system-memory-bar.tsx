@@ -40,7 +40,7 @@ export function SystemMemoryBar() {
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className="text-muted-foreground hover:text-foreground shrink-0 rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                className="text-muted-foreground hover:text-foreground shrink-0 rounded-sm focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring/40"
                 aria-label="About system memory"
               >
                 <HardDrive className="h-3.5 w-3.5" />

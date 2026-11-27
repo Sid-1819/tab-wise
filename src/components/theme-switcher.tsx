@@ -3,15 +3,7 @@ import { useTheme } from 'next-themes';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-} from '@/components/ui/dropdown-menu';
-import { THEME_PRESETS, useThemePreset } from '@/components/theme-provider';
-import { applyPresetWithTransition, applyThemeWithTransition, originFromElement } from '@/lib/theme-transition';
+import { applyThemeWithTransition, originFromElement } from '@/lib/theme-transition';
 import { cn } from '@/lib/utils';
 import { useIsClient } from '@/hooks/use-is-client';
 
@@ -65,24 +57,5 @@ export function ThemeSwitcher() {
       </Button>
 
     </div>
-  );
-}
-
-/** "Theme preset" submenu, for use inside a DropdownMenuContent. */
-export function ThemePresetSub() {
-  const { preset, setPreset } = useThemePreset();
-  return (
-    <DropdownMenuSub>
-      <DropdownMenuSubTrigger>Theme preset</DropdownMenuSubTrigger>
-      <DropdownMenuSubContent className="w-44">
-        <DropdownMenuRadioGroup value={preset} onValueChange={(id) => applyPresetWithTransition(() => setPreset(id))}>
-          {THEME_PRESETS.map((p) => (
-            <DropdownMenuRadioItem key={p.id} value={p.id}>
-              {p.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuSubContent>
-    </DropdownMenuSub>
   );
 }

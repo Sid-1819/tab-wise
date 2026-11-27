@@ -58,7 +58,10 @@ const defaultDeps: ExternalDeps = {
   getWorkspaces,
   restore: restoreWorkspaceResources,
   markOpened: (id) => updateWorkspace(id, (w) => markOpened(w)),
-  websiteAccess: async () => (await getSettings()).websiteAccess,
+  websiteAccess: async () => {
+    const s = await getSettings();
+    return s.websiteAccess && s.workspaces;
+  },
 };
 
 export async function handleExternalRequest(

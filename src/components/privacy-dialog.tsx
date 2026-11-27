@@ -186,58 +186,62 @@ export function PrivacyDialog() {
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh]">
-          <div className="flex flex-col gap-3 pr-2 text-xs">
+          <div className="flex flex-col gap-3 pr-2 text-xs [&>section+section]:border-t [&>section+section]:border-border/60 [&>section+section]:pt-3">
+            {settings.workspaces && (
             <section className="flex flex-col gap-2">
-              <h3 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Controls</h3>
-              <label className="flex items-start justify-between gap-3">
-                <span>
-                  <span className="block font-medium">Remember where I left off</span>
-                  <span className="block text-muted-foreground">
-                    Notes which tabs were open when a window closes, and suggests projects from open tabs. Uses
-                    titles and addresses only, never page content.
+                <h3 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Controls</h3>
+                <label className="flex items-start justify-between gap-4">
+                  <span>
+                    <span className="block font-medium">Remember where I left off</span>
+                    <span className="mt-0.5 block leading-snug text-muted-foreground">
+                      Notes which tabs were open when a window closes, and suggests projects from open tabs. Uses
+                      titles and addresses only, never page content.
+                    </span>
                   </span>
-                </span>
-                <Switch
-                  checked={settings.autoCapture}
-                  onCheckedChange={(v) => void toggle({ autoCapture: v })}
-                  aria-label="Remember where I left off"
-                />
-              </label>
-              <label className="flex items-start justify-between gap-3">
-                <span>
-                  <span className="block font-medium">Let the TabWise website see my workspaces</span>
-                  <span className="block text-muted-foreground">
-                    Only tabwise.visionly.dev can ask, and only while you have it open. Your browser shows the
-                    data on the page; TabWise doesn’t send it anywhere.
+                  <Switch
+                    className="mt-0.5"
+                    checked={settings.autoCapture}
+                    onCheckedChange={(v) => void toggle({ autoCapture: v })}
+                    aria-label="Remember where I left off"
+                  />
+                </label>
+                <label className="flex items-start justify-between gap-4">
+                  <span>
+                    <span className="block font-medium">Let the TabWise website see my workspaces</span>
+                    <span className="mt-0.5 block leading-snug text-muted-foreground">
+                      Only tabwise.visionly.dev can ask, and only while you have it open. Your browser shows the
+                      data on the page; TabWise doesn’t send it anywhere.
+                    </span>
                   </span>
-                </span>
-                <Switch
-                  checked={settings.websiteAccess}
-                  onCheckedChange={(v) => void toggle({ websiteAccess: v })}
-                  aria-label="Let the TabWise website see my workspaces"
-                />
-              </label>
-            </section>
+                  <Switch
+                    className="mt-0.5"
+                    checked={settings.websiteAccess}
+                    onCheckedChange={(v) => void toggle({ websiteAccess: v })}
+                    aria-label="Let the TabWise website see my workspaces"
+                  />
+                </label>
+              </section>
+            )}
 
             <section className="flex flex-col gap-1" data-testid="stores">
               <h3 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                 What TabWise stores on this device
               </h3>
               {summary ? (
-                <ul className="flex flex-col gap-0.5 text-muted-foreground" data-testid="stores-list">
-                  <li>
-                    {summary.workspaces} workspace{summary.workspaces === 1 ? '' : 's'} ({summary.archived} archived)
-                  </li>
-                  <li>
-                    {summary.pages} saved page{summary.pages === 1 ? '' : 's'} (title + address) and {summary.notes}{' '}
-                    note{summary.notes === 1 ? '' : 's'} you wrote
-                  </li>
-                  <li>{summary.activityEvents} activity entries (what you saved, left, resumed)</li>
-                  <li>
-                    {summary.rememberedWindows} open window{summary.rememberedWindows === 1 ? '' : 's'} remembered
-                    right now
-                  </li>
-                  {bytes != null ? <li>{formatBytes(bytes)} used in total</li> : null}
+                <ul className="flex flex-col gap-1" data-testid="stores-list">
+                  {[
+                    [`${summary.workspaces}`, `workspace${summary.workspaces === 1 ? '' : 's'} (${summary.archived} archived)`],
+                    [`${summary.pages}`, `saved page${summary.pages === 1 ? '' : 's'} (title + address)`],
+                    [`${summary.notes}`, `note${summary.notes === 1 ? '' : 's'} you wrote`],
+                    [`${summary.activityEvents}`, 'activity entries (saved, left, resumed)'],
+                    [`${summary.rememberedWindows}`, `open window${summary.rememberedWindows === 1 ? '' : 's'} remembered`],
+                    ...(bytes != null ? [[formatBytes(bytes), 'used in total']] : []),
+                  ].map(([n, label]) => (
+                    <li key={label} className="flex items-baseline gap-2">
+                      <span className="w-12 shrink-0 text-right font-medium tabular-nums text-foreground">{n}</span>
+                      <span className="text-muted-foreground">{label}</span>
+                    </li>
+                  ))}
                 </ul>
               ) : (
                 <p className="text-muted-foreground">Loading…</p>

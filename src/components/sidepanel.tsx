@@ -9,6 +9,7 @@ import { ActivityStats } from '@/components/activity-stats';
 import { Toaster } from '@/components/ui/toaster';
 import { GroupToolbar } from '@/components/group-toolbar';
 import { GroupDialog } from '@/components/group-dialog';
+import { WindowScopeMenu } from '@/components/window-scope-menu';
 import { RecentlyClosed } from '@/components/recently-closed';
 import { WorkspacesView } from '@/components/workspaces-view';
 import { ResumeAndSuggest } from '@/components/resume-and-suggest';
@@ -69,7 +70,9 @@ import {
   getPendingWhatsNew,
   type PendingWhatsNew,
 } from '@/lib/release-landing';
+import { ToastAction } from '@/components/ui/toast';
 import { useToast } from '@/components/ui/use-toast';
+import { updateSettings, watchSettings } from '@/lib/settings';
 import { useWorkspaceList } from '@/hooks/use-workspace-list';
 import { switchToWorkspace } from '@/lib/workspace-switch-browser';
 
@@ -148,6 +151,9 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
   const [tabsForNewGroup, setTabsForNewGroup] = useState<TabInfo[]>([]);
   const { toast } = useToast();
   const workspaceList = useWorkspaceList();
+  const [workspacesOn, setWorkspacesOn] = useState(false);
+  useEffect(() => watchSettings((st) => setWorkspacesOn(st.workspaces)), []);
+  const activeView = workspacesOn ? view : 'tabs';
 
   const loadTabs = useCallback(async () => {
     const [chromeTabs, chromeWindows, current] = await Promise.all([
@@ -356,10 +362,28 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
     ]
   );
 
+  /** Reopen the last `count` closed tabs (Chrome restores the most recent each time). */
+  const reopenClosed = useCallback(
+    async (count: number) => {
+      for (let i = 0; i < count; i += 1) {
+        await new Promise<void>((resolve) => chrome.sessions.restore(() => resolve()));
+      }
+      loadTabs();
+    },
+    [loadTabs]
+  );
+
+  const undoAction = (count: number) => (
+    <ToastAction altText="Undo" onClick={() => void reopenClosed(count)}>
+      Undo
+    </ToastAction>
+  );
+
   const handleCloseTab = (tabId: number) => {
     chrome.tabs.remove(tabId, () => {
       setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== tabId));
       updateActivity();
+      toast({ title: 'Tab closed', action: undoAction(1), duration: 6000 });
     });
   };
 
@@ -367,6 +391,7 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
     chrome.tabs.remove(tabIds, () => {
       setTabs((prevTabs) => prevTabs.filter((tab) => !tabIds.includes(tab.id)));
       updateActivity();
+      toast({ title: `${tabIds.length} tab${tabIds.length === 1 ? '' : 's'} closed`, action: undoAction(tabIds.length), duration: 6000 });
     });
   };
 
@@ -774,6 +799,7 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
       toast({
         title: 'Duplicates closed',
         description: `Closed ${toClose.length} extra tab(s).`,
+        action: undoAction(toClose.length),
       });
     });
   }, [duplicateClusters, tabs, toast, loadTabs, updateActivity]);
@@ -824,6 +850,7 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
       toast({
         title: 'Stale tabs closed',
         description: `Closed ${ids.length} tab${ids.length === 1 ? '' : 's'}.`,
+        action: undoAction(ids.length),
       });
     });
   };
@@ -1066,7 +1093,7 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
   }, []);
 
   // "Switch to <project>": focus its window if open, else reopen it. Type a name to filter.
-  const switchActions: PaletteAction[] = workspaceList
+  const switchActions: PaletteAction[] = (workspacesOn ? workspaceList : [])
     .filter((x) => !x.archived)
     .slice(0, 12)
     .map((w) => ({
@@ -1107,6 +1134,7 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
       onSelect: () => void handleWindowScopeChange('all'),
     },
     { id: 'create-group', label: 'Create group', onSelect: handleCreateGroup },
+    { id: 'reopen-closed', label: 'Reopen closed tab', onSelect: () => void reopenClosed(1) },
     {
       id: 'activity',
       label: showActivity ? 'Hide activity' : 'Show activity',
@@ -1147,12 +1175,18 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
             surface={surface}
             showActivity={showActivity}
             onToggleActivity={setShowActivity}
-            activityAvailable={view === 'tabs'}
+            activityAvailable={activeView === 'tabs'}
+            workspacesOn={workspacesOn}
+            onToggleWorkspaces={(on) => {
+              void updateSettings({ workspaces: on });
+              if (!on) setView('tabs');
+            }}
             onFeedback={() => chrome.tabs.create({ url: FEEDBACK_URL })}
           />
         </div>
       </header>
 
+      {workspacesOn && (
       <div className="mb-2 grid h-7 shrink-0 grid-cols-2 gap-0.5 rounded-md bg-muted/70 p-0.5" role="tablist" aria-label="Main view">
         {(['tabs', 'workspaces'] as const).map((v) => (
           <button
@@ -1172,7 +1206,9 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
           </button>
         ))}
       </div>
+      )}
 
+      {workspacesOn && (
       <ResumeAndSuggest
         tabs={tabs}
         chromeGroups={chromeGroups}
@@ -1180,45 +1216,34 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
         onTabsChanged={loadTabs}
         onFirstWorkspace={() => setView('workspaces')}
       />
-      <TourCard />
+      )}
+      {workspacesOn && <TourCard />}
 
-      {view === 'workspaces' && (
+      {activeView === 'workspaces' && (
         <main className="flex-1 flex flex-col overflow-hidden min-h-0">
           <WorkspacesView onTabsChanged={loadTabs} />
         </main>
       )}
 
-      <main className={cn('flex-1 flex flex-col overflow-hidden min-h-0', view === 'workspaces' && 'hidden')}>
+      <main className={cn('flex-1 flex flex-col overflow-hidden min-h-0', activeView === 'workspaces' && 'hidden')}>
         <div className="shrink-0">
-          <SearchBar ref={searchInputRef} value={searchQuery} onChange={setSearchQuery} />
-
-          <div className="mb-2 grid h-7 grid-cols-2 gap-0.5 rounded-md bg-muted/70 p-0.5">
-            <button
-              type="button"
-              className={cn(
-                'rounded-[5px] text-[11px] leading-none',
-                windowScope === 'current'
-                  ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              onClick={() => void handleWindowScopeChange('current')}
-            >
-              This window
-            </button>
-            <button
-              type="button"
-              className={cn(
-                'rounded-[5px] text-[11px] leading-none',
-                windowScope === 'all'
-                  ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              onClick={() => void handleWindowScopeChange('all')}
-            >
-              All windows
-            </button>
+          <div className="mb-2 flex items-center gap-1">
+            <div className="min-w-0 flex-1">
+              <SearchBar ref={searchInputRef} value={searchQuery} onChange={setSearchQuery} className="" />
+            </div>
+            <WindowScopeMenu value={windowScope} onChange={(scope) => void handleWindowScopeChange(scope)} />
           </div>
-          <div className="mb-2 flex flex-wrap items-center gap-1">
+          <div className="mb-1 flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={handleCreateNewTab}
+              aria-label="New tab"
+              title="New tab"
+              className="flex h-7 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 text-left text-xs text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
+            >
+              <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              New tab
+            </button>
             <RecentlyClosed onRestored={loadTabs} />
             <GroupToolbar
               onCreateGroup={handleCreateGroup}
@@ -1276,18 +1301,6 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
 
         <ScrollArea className="flex-1 min-h-0">
           <div className="min-w-0 space-y-1 py-0.5">
-            <button
-              type="button"
-              onClick={handleCreateNewTab}
-              aria-label="New tab"
-              title="New tab"
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-current">
-                <Plus className="h-2.5 w-2.5" aria-hidden />
-              </span>
-              New tab
-            </button>
             {sections.map((section) => {
               const cards = section.groups.map((group) => (
                 <TabGroupCard

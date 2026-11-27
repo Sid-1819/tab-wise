@@ -17,7 +17,7 @@ const CACHE_KEY = 'windowCache' as const;
 const DEBOUNCE_MS = 500;
 
 /** Mirrors the user's "remember where I left off" switch. On until we learn otherwise. */
-let captureEnabled = true;
+let captureEnabled = false;
 
 let cacheQueue: Promise<unknown> = Promise.resolve();
 const timers = new Map<number, ReturnType<typeof setTimeout>>();
@@ -130,9 +130,10 @@ export async function finalizeStaleWindows(): Promise<void> {
 export function registerAutoCapture(): void {
   // Turning the switch off also forgets what was cached, so nothing lingers.
   watchSettings((s) => {
-    const turnedOn = s.autoCapture && !captureEnabled;
-    captureEnabled = s.autoCapture;
-    if (!s.autoCapture) void mutateCache(() => ({}));
+    const enabled = s.autoCapture && s.workspaces;
+    const turnedOn = enabled && !captureEnabled;
+    captureEnabled = enabled;
+    if (!enabled) void mutateCache(() => ({}));
     if (turnedOn) void chrome.windows.getAll().then((ws) => ws.forEach((w) => scheduleWindowSnapshot(w.id)));
   });
   chrome.tabs.onCreated.addListener((tab) => scheduleWindowSnapshot(tab.windowId));

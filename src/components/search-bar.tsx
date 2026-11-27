@@ -5,15 +5,16 @@ import { Input } from '@/components/ui/input';
 interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
+  className?: string;
 }
 
 export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
-  function SearchBar({ value, onChange }, ref) {
+  function SearchBar({ value, onChange, className = 'mb-2' }, ref) {
     const [isFocused, setIsFocused] = useState(false);
     const showShortcutHint = !value && !isFocused;
 
     return (
-      <div className="relative mb-2">
+      <div className={`relative ${className}`}>
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
           ref={ref}

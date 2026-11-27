@@ -7,16 +7,19 @@ export interface Settings {
   autoCapture: boolean;
   /** Let the TabWise website (allow-listed origins only) read and open your workspaces. */
   websiteAccess: boolean;
+  /** Master switch for the Workspaces feature (beta). Off until switched on. */
+  workspaces: boolean;
 }
 
 export const SETTINGS_KEY = 'settings' as const;
-export const DEFAULT_SETTINGS: Settings = { autoCapture: true, websiteAccess: true };
+export const DEFAULT_SETTINGS: Settings = { autoCapture: true, websiteAccess: true, workspaces: false };
 
 export function resolveSettings(raw: unknown): Settings {
   const r = raw && typeof raw === 'object' ? (raw as Partial<Settings>) : {};
   return {
     autoCapture: typeof r.autoCapture === 'boolean' ? r.autoCapture : DEFAULT_SETTINGS.autoCapture,
     websiteAccess: typeof r.websiteAccess === 'boolean' ? r.websiteAccess : DEFAULT_SETTINGS.websiteAccess,
+    workspaces: typeof r.workspaces === 'boolean' ? r.workspaces : DEFAULT_SETTINGS.workspaces,
   };
 }
 
@@ -24,6 +27,10 @@ export function getSettings(): Promise<Settings> {
   return new Promise((resolve) => {
     chrome.storage.local.get([SETTINGS_KEY], (r) => resolve(resolveSettings(r[SETTINGS_KEY])));
   });
+}
+
+export async function isWorkspacesEnabled(): Promise<boolean> {
+  return (await getSettings()).workspaces;
 }
 
 export async function updateSettings(patch: Partial<Settings>): Promise<Settings> {

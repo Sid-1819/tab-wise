@@ -1,3 +1,4 @@
+import { isWorkspacesEnabled } from '@/lib/settings';
 import {
   NEW_WORKSPACE,
   PARENT_TITLE,
@@ -80,10 +81,11 @@ function createItem(props: chrome.contextMenus.CreateProperties): Promise<void> 
 }
 
 async function build(force: boolean): Promise<void> {
+  const enabled = await isWorkspacesEnabled();
   const [workspaces, last, urls] = await Promise.all([getWorkspaces(), lastTarget(), focusedWindowUrls()]);
   const matched = matchedWorkspaceId(urls, workspaces);
-  const entries = planMenu(workspaces, matched, last);
-  const signature = JSON.stringify(entries.map((e) => [e.id, e.title]));
+  const entries = enabled ? planMenu(workspaces, matched, last) : [];
+  const signature = JSON.stringify([enabled, entries.map((e) => [e.id, e.title])]);
   if (!force && signature === lastSignature) return;
   lastSignature = signature;
 
@@ -93,7 +95,7 @@ async function build(force: boolean): Promise<void> {
     title: 'Open Tab Wise in Side Panel',
     contexts: ['page', 'action'],
   });
-  for (const kind of Object.keys(CONTEXTS) as MenuKind[]) {
+  for (const kind of enabled ? (Object.keys(CONTEXTS) as MenuKind[]) : []) {
     await createItem({ id: parentId(kind), title: PARENT_TITLE[kind], contexts: [...CONTEXTS[kind]] });
   }
   for (const e of entries) {
@@ -186,7 +188,7 @@ export async function handleMenuClick(
   tab?: chrome.tabs.Tab,
 ): Promise<boolean> {
   const parsed = parseMenuId(String(info.menuItemId));
-  if (!parsed) return false;
+  if (!parsed || !(await isWorkspacesEnabled())) return false;
   const pageUrl = info.pageUrl || tab?.url || '';
   try {
     const clicked: Clicked =
@@ -210,6 +212,7 @@ export async function handleMenuClick(
 
 /** Keyboard shortcut: add the active tab to this window's workspace (or the last used one). */
 export async function handleAddCommand(): Promise<void> {
+  if (!(await isWorkspacesEnabled())) return;
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (!tab?.url) return;
   try {
@@ -237,7 +240,7 @@ export function registerWorkspaceMenu(): void {
   chrome.runtime.onInstalled.addListener(() => void rebuildMenus(true));
   chrome.runtime.onStartup.addListener(() => void rebuildMenus(true));
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && (changes.workspaces || changes[LAST_TARGET_KEY])) scheduleRebuild();
+    if (area === 'local' && (changes.workspaces || changes.settings || changes[LAST_TARGET_KEY])) scheduleRebuild();
   });
   chrome.windows.onFocusChanged.addListener(scheduleRebuild);
   chrome.tabs.onActivated.addListener(scheduleRebuild);

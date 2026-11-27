@@ -9,12 +9,9 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ThemePresetSub } from '@/components/theme-switcher';
+import { WORKSPACES_TOGGLE_VISIBLE } from '@/lib/features';
 import { useSurfaceChoice } from '@/components/surface-switcher';
 import type { SurfaceMode } from '@/lib/surface-mode';
 
@@ -25,10 +22,12 @@ interface HeaderMenuProps {
   /** Activity stats only apply to the Tabs view. */
   activityAvailable: boolean;
   onFeedback: () => void;
+  workspacesOn: boolean;
+  onToggleWorkspaces: (on: boolean) => void;
 }
 
 /** Everything that is not needed every minute lives behind one "more" button. */
-export function HeaderMenu({ surface, showActivity, onToggleActivity, activityAvailable, onFeedback }: HeaderMenuProps) {
+export function HeaderMenu({ surface, showActivity, onToggleActivity, activityAvailable, onFeedback, workspacesOn, onToggleWorkspaces }: HeaderMenuProps) {
   const { mode, choose, openSidePanel } = useSurfaceChoice(surface);
 
   return (
@@ -42,25 +41,24 @@ export function HeaderMenu({ surface, showActivity, onToggleActivity, activityAv
         <DropdownMenuCheckboxItem checked={showActivity} disabled={!activityAvailable} onCheckedChange={onToggleActivity}>
           Activity stats
         </DropdownMenuCheckboxItem>
-        <ThemePresetSub />
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>Toolbar icon opens</DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="w-44">
-            <DropdownMenuRadioGroup value={mode} onValueChange={(m) => void choose(m as SurfaceMode)}>
-              <DropdownMenuRadioItem value="sidepanel">Side panel</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="popup">Popup</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-            {surface === 'popup' && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => void openSidePanel()}>Open side panel now</DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
+        {WORKSPACES_TOGGLE_VISIBLE && (
+          <DropdownMenuCheckboxItem checked={workspacesOn} onCheckedChange={onToggleWorkspaces}>
+            Workspaces (beta)
+          </DropdownMenuCheckboxItem>
+        )}
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="sr-only">Help</DropdownMenuLabel>
-        <DropdownMenuItem onSelect={onFeedback}>Send feedback or report a bug</DropdownMenuItem>
+        <DropdownMenuLabel className="px-2 pb-0.5 pt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Toolbar icon opens
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={mode} onValueChange={(m) => void choose(m as SurfaceMode)}>
+          <DropdownMenuRadioItem value="sidepanel">Side panel</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="popup">Popup</DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+        {surface === 'popup' && (
+          <DropdownMenuItem onSelect={() => void openSidePanel()}>Open side panel now</DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onFeedback}>Send feedback</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

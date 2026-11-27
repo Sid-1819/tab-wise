@@ -1,3 +1,4 @@
+import { isWorkspacesEnabled } from '@/lib/settings';
 import { findWindowFor, initials, type WindowLite } from '@/lib/workspace-switch';
 import { matchedWorkspaceId } from '@/lib/workspace-menu';
 import { restoreWorkspaceResources } from '@/lib/workspace-browser';
@@ -53,6 +54,10 @@ export async function refreshProjectBadge(): Promise<void> {
     if (tab?.id == null) return;
     const win = await chrome.windows.get(tab.windowId, { populate: true });
     if (win.incognito || win.type !== 'normal') return;
+    if (!(await isWorkspacesEnabled())) {
+      await chrome.action.setBadgeText({ text: '', tabId: tab.id });
+      return;
+    }
     const workspaces = await getWorkspaces();
     const id = matchedWorkspaceId(
       (win.tabs ?? []).map((t) => t.url || t.pendingUrl || ''),
@@ -80,7 +85,7 @@ export function registerProjectBadge(): void {
   });
   chrome.windows.onFocusChanged.addListener(schedule);
   chrome.storage.onChanged.addListener((c, area) => {
-    if (area === 'local' && c.workspaces) schedule();
+    if (area === 'local' && (c.workspaces || c.settings)) schedule();
   });
   schedule();
 }

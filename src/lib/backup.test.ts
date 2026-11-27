@@ -7,10 +7,10 @@ import { addNote, createWorkspace } from './workspace-model';
 describe('backup round trip', () => {
   it('exports and re-imports workspaces and settings', () => {
     const ws = addNote(createWorkspace('A', 5), 'hi', 6);
-    const text = JSON.stringify(buildBackup([ws], { autoCapture: false, websiteAccess: true }, 99));
+    const text = JSON.stringify(buildBackup([ws], { autoCapture: false, websiteAccess: true, workspaces: false }, 99));
     const r = parseBackup(text);
     expect(r.ok && r.workspaces[0].notes[0].body).toBe('hi');
-    expect(r.ok && r.settings).toEqual({ autoCapture: false, websiteAccess: true });
+    expect(r.ok && r.settings).toEqual({ autoCapture: false, websiteAccess: true, workspaces: false });
     expect(backupFileName(new Date(2026, 10, 9).getTime())).toBe('tabwise-backup-2026-11-09.json');
   });
   it('rejects junk, other apps, newer versions, and huge files', () => {
@@ -43,7 +43,12 @@ describe('mergeWorkspaces', () => {
 describe('settings + data controls', () => {
   it('defaults on and tolerates garbage', () => {
     expect(resolveSettings(undefined)).toEqual(DEFAULT_SETTINGS);
-    expect(resolveSettings({ autoCapture: 'no', websiteAccess: false })).toEqual({ autoCapture: true, websiteAccess: false });
+    expect(resolveSettings({ autoCapture: 'no', websiteAccess: false })).toEqual({ autoCapture: true, websiteAccess: false, workspaces: false });
+  });
+  it('keeps workspaces off until switched on', () => {
+    expect(DEFAULT_SETTINGS.workspaces).toBe(false);
+    expect(resolveSettings({ workspaces: true }).workspaces).toBe(true);
+    expect(resolveSettings({ workspaces: 'yes' }).workspaces).toBe(false);
   });
   it('summarizes and clears only what it should', () => {
     let ws = addNote(createWorkspace('A', 1), 'n', 2);

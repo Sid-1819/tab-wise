@@ -7,6 +7,14 @@ import { getGroupBorderColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
 import { FaviconImg } from '@/components/favicon-img';
 
+function CountBadge({ n }: { n: number }) {
+  return (
+    <span className="shrink-0 rounded-full bg-muted px-1.5 text-[10px] font-medium leading-4 tabular-nums text-muted-foreground">
+      {n}
+    </span>
+  );
+}
+
 interface TabGroupCardProps {
   group: TabGroup;
   onCloseTab: (tabId: number) => void;
@@ -60,30 +68,37 @@ function TabSubGroupSection({
     setCollapsed(false);
   }
 
+  if (!hasMultipleTabs) {
+    return (
+      <>
+        {subgroup.tabs.map((tab) => (
+          <TabItem key={tab.id} {...tabItemProps(tab, subgroup.id)} nestedInGroup />
+        ))}
+      </>
+    );
+  }
+
   return (
     <div className="space-y-0.5">
       <button
         type="button"
-        className="grid min-w-0 w-full grid-cols-[12px_minmax(0,1fr)] items-center gap-1 rounded-md py-0.5 pl-1 pr-0.5 text-left hover:bg-accent/50"
+        className="flex min-h-6 min-w-0 w-full items-center gap-1 rounded-md py-0.5 pl-1 pr-0.5 text-left hover:bg-foreground/5"
         onClick={() => hasMultipleTabs && setCollapsed((c) => !c)}
         aria-expanded={!collapsed}
       >
-        {hasMultipleTabs && (
-          <ChevronDown
-            className={cn(
-              'h-3 w-3 shrink-0 text-muted-foreground transition-transform',
-              collapsed && '-rotate-90'
-            )}
-          />
-        )}
-        {!hasMultipleTabs && <span className="inline-block h-3 w-3 shrink-0" />}
+        <ChevronDown
+          className={cn(
+            'h-3 w-3 shrink-0 text-muted-foreground transition-transform',
+            collapsed && '-rotate-90'
+          )}
+        />
         <span
-          className="min-w-0 truncate text-xs font-medium text-muted-foreground"
+          className="min-w-0 truncate text-[11px] font-medium text-muted-foreground"
           title={subgroup.label}
         >
           {subgroup.label}
-          {hasMultipleTabs ? ` - ${subgroup.tabs.length}` : ''}
         </span>
+        <CountBadge n={subgroup.tabs.length} />
       </button>
       {!collapsed && (
         <div className="space-y-0.5 pl-3">
@@ -204,7 +219,7 @@ export function TabGroupCard({
     );
 
   const headerRow = (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 px-2 py-1">
+    <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 px-2 py-1">
       <button
         type="button"
         className="flex min-w-0 items-center gap-1 overflow-hidden text-left"
@@ -231,12 +246,12 @@ export function TabGroupCard({
           </span>
         )}
         <span
-          className="min-w-0 truncate text-sm font-semibold tracking-tight"
+          className="min-w-0 truncate text-xs font-semibold tracking-tight"
           title={displayName}
         >
           {displayName}
-          {group.tabs.length > 1 ? ` - ${group.tabs.length}` : ''}
         </span>
+        {group.tabs.length > 1 && <CountBadge n={group.tabs.length} />}
         {group.isImportant && (
           <Shield className="h-3.5 w-3.5 shrink-0 fill-amber-500 text-amber-500" />
         )}

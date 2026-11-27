@@ -52,7 +52,7 @@ import {
 } from '@/lib/workspace-browser';
 
 const textareaClass =
-  'w-full resize-none rounded-md border border-input bg-background px-2 py-1.5 text-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring';
+  'w-full resize-none rounded-md border border-input bg-background px-2 py-1.5 text-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring/40';
 
 function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : 'Unknown error';
