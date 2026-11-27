@@ -6,26 +6,35 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 
 ---
 
-<img width="1280" height="800" alt="Screenshot 2026-06-13 at 14 45 02" src="https://github.com/user-attachments/assets/e609ae2f-9c95-4fc5-b904-49c1b9a1d60a" />
+<p align="center"><img src="docs/screenshots/tab-wise-marquee-1400x560.jpg" alt="Tab Wise 2.7: Focus mode and a calmer side panel" width="100%"></p>
 
 ## Features
 
-- **Smart Tab Search** 
-- **Tab Grouping** — Organize tabs with domain-based auto-grouping and manual group creation. Refer to 'Auto-Grouping Strategies' for details.
-- **Workspaces** — One place per project: saved pages, notes, focus and next step. Tab Wise notices when a window looks like one project, remembers where you left off, and offers a welcome-back card. Right-click any page, link or selection to add it; `Alt+Shift+W` adds the current tab; `Ctrl/Cmd+K` then "switch to" jumps between projects. Saved sessions from earlier versions live here as archived workspaces.
-- **Privacy & data** — Turn off remembering windows or website access, see exactly what is stored, export/import a backup, and clear history. Everything stays on your device.
-- **Recently Closed** 
-- **Duplicate Detection** 
-- **Activity Tracking** 
-- **System Memory Bar** 
-- **Light / Dark Theme** 
-- **Side Panel UI**
+- **Focus mode** — Set an optional goal and a timer (25, 50, 90 minutes or no limit). New tabs and windows are blocked until you end it, and your open tabs stay as they are. Optionally stay on the sites you have open. The countdown shows on the toolbar icon and in the panel. Start it from the `⋯` menu or `Ctrl/Cmd+K`.
+- **Smart Tab Search** — Find any open tab by title, URL or domain. Press `/` to jump to search.
+- **Tab Grouping** — Organize tabs with domain-based auto-grouping (with nested subdomains) and manual groups. See [Auto-Grouping Strategies](#auto-grouping-strategies).
+- **Undo and Recently Closed** — Closing a tab, a group, stale tabs or duplicates shows an Undo toast. Recently closed tabs are one click away, and `Ctrl/Cmd+K` has "Reopen closed tab".
+- **Duplicate Detection** — Spot the same page open more than once and close the extras in one action.
+- **Stale Tab Suggestions** — Surface tabs you have not visited in a while, then close or sleep them.
+- **Activity Stats** — Optional, local-only insights on where your tabs go.
+- **System Memory Bar** — Optional meter of overall memory pressure (opt-in permission).
+- **Command Palette** — `Ctrl/Cmd+K` for quick actions: new tab, search, switch window scope, focus mode and more.
+- **Privacy & data** — See what is stored, export or clear it. Everything stays on your device; there is no account.
+- **Light / Dark Theme** and a **Side Panel** (or popup) layout.
+
+## Screenshots
+
+| Focus mode | Set a goal and a timer |
+| :---: | :---: |
+| ![Focus mode running](docs/screenshots/tab-wise-store-640x400-1.jpg) | ![Focus mode setup](docs/screenshots/tab-wise-store-640x400-2.jpg) |
+| **Search every open tab** | **Groups and Undo** |
+| ![Search tabs](docs/screenshots/tab-wise-store-640x400-3.jpg) | ![Grouped tabs with Undo](docs/screenshots/tab-wise-store-640x400-4.jpg) |
 
 ## Live Demo
 
-[![Watch Demo](https://img.youtube.com/vi/6L6YTyywfSU/maxresdefault.jpg)](https://youtu.be/6L6YTyywfSU)
+[![Watch Demo](https://img.youtube.com/vi/JTa6w4-Vtbg/maxresdefault.jpg)](https://www.youtube.com/watch?v=JTa6w4-Vtbg)
 
-*See the side panel in action: quick tab searching, domain-based grouping, and session management at your fingertips.*
+*Watch Tab Wise 2.7: search, grouping, Undo and Focus mode in the side panel.*
 
 ## Installation
 
@@ -78,28 +87,28 @@ Tab Wise is a productivity-focused Chrome extension that helps you manage, searc
 
 ## Usage
 
-1. Open Tab Wise from the toolbar icon
-2. Search tabs using the search bar — press `/` while the side panel is focused to jump to search
-3. Click a tab to switch to it, or close individual tabs
-4. Use group actions to close, favorite, or reorganize tabs
-5. Open Workspaces to save a project (or "Save window"), then pick it up later
-6. Toggle theme from the header
+1. Open Tab Wise from the toolbar icon (or `Alt/Option+Shift+Y`)
+2. Search tabs with the search bar. Press `/` while the side panel is focused to jump to it
+3. Click a tab to switch to it, or close individual tabs. Closed one by mistake? Press Undo in the toast
+4. Use the `⋯` menu or `Ctrl/Cmd+K` to start Focus mode, pick the toolbar icon behavior, or toggle activity stats
+5. Use the folder-plus button to create your own tab group, and the gear for grouping settings
+6. Toggle light and dark from the header
 
 ---
 
-## Troubleshooting & FAQ
+## Troubleshooting
 
 ### Why isn't the side panel opening?
 Ensure you are on a compatible web page. Chrome's Side Panel API does not function on certain internal browser pages (e.g., chrome://settings). If it fails on standard pages, try reloading the extension in `chrome://extensions/`.
 
 ### How do I reset my data?
-Tab Wise stores data locally. You can export, clear or delete your workspaces from the Privacy & data panel, or reset everything by navigating to `chrome://extensions/`, clicking the 'Details' button for Tab Wise, and selecting 'Clear site data'.
+Tab Wise stores data locally. You can export or clear your data from the Privacy & data panel, or reset everything by navigating to `chrome://extensions/`, clicking the 'Details' button for Tab Wise, and selecting 'Clear site data'.
 
 ### Reporting Issues
 If you encounter persistent bugs (such as #46 or #30), please check our [GitHub Issues](https://github.com/Sid-1819/tab-wise/issues) to see if a fix is already in progress, or open a new ticket with your Chrome version and a description of the issue.
-## Auto-Grouping Strategies
 
 ## Auto-Grouping Strategies
+
 Tab Wise intelligently organizes your open tabs to streamline your browsing experience. The primary heuristic used for automatic grouping is:
 
 - **Domain-based Grouping**: Tabs are grouped based on their **root domain**.
@@ -108,6 +117,7 @@ Tab Wise intelligently organizes your open tabs to streamline your browsing expe
   - **Benefit**: This simplifies finding and managing related content, providing a cleaner overview of your active browser usage.
 
 We are continually exploring more sophisticated auto-grouping heuristics for future releases to offer even more customized tab organization.
+
 ## Tech Stack
 
 | Layer | Tools |
@@ -130,17 +140,30 @@ tab-wise/
 │   │   ├── ui/                 # shadcn/ui primitives
 │   │   ├── sidepanel.tsx       # Main side panel layout
 │   │   ├── tab-group-card.tsx  # Grouped tab cards
-│   │   ├── workspaces-view.tsx # Workspaces list and detail
+│   │   ├── focus-card.tsx      # Focus mode setup and running view
+│   │   ├── header-menu.tsx     # The ⋯ menu
 │   │   ├── privacy-dialog.tsx  # Privacy & data controls
 │   │   └── ...
 │   ├── hooks/                  # React hooks (activity, memory)
-│   ├── lib/                    # Tab utils, storage, session capture
+│   ├── lib/                    # Tab utils, storage, focus mode rules and background wiring
 │   └── types/                  # TypeScript interfaces
 ├── icons/
 ├── manifest.json
 ├── sidepanel.html
 └── vite.config.ts
 ```
+
+---
+
+## Workspaces (in testing)
+
+Workspaces (projects with saved pages, notes and "where you left off") are built but switched off by default and hidden in public builds. To try them locally, build with the flag on:
+
+```bash
+VITE_WORKSPACES_TOGGLE=true pnpm build
+```
+
+Then open the `⋯` menu and turn on **Workspaces (beta)**. With the setting off, the panel, right-click menu, keyboard shortcut, toolbar badge and website bridge are all inactive.
 
 ---
 
@@ -182,6 +205,7 @@ Our vision for the next 6 months focuses on stability, performance, and advanced
 - Refinement of UI/UX based on community feedback and accessibility audits.
 
 *Note: Timelines are subject to change based on community priorities and technical feasibility.*
+
 ## Support
 
 - **Bug reports:** [GitHub Issues](https://github.com/Sid-1819/tab-wise/issues)
@@ -237,15 +261,3 @@ This project is licensed under the [MIT License](./LICENSE).
 ---
 
 Made with care by [Siddhesh Shirdhankar](https://github.com/Sid-1819)
-## Preview
-
-Experience a streamlined workflow directly in your browser's side panel.
-
-| Tab Management | Session Saving |
-| :--- | :--- |
-| ![Tab Search and Grouping](https://github.com/user-attachments/assets/e609ae2f-9c95-4fc5-b904-49c1b9a1d60a) | ![Session Restore View](https://github.com/user-attachments/assets/placeholder-session-view) |
-
-### In Action
-![Tab Wise Demo](https://github.com/user-attachments/assets/your-gif-url-here)
-
-*Quick tab searching, domain-based grouping, and session management at your fingertips.*
