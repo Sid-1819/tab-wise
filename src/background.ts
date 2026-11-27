@@ -18,6 +18,7 @@ import {
   registerWorkspaceMenu,
 } from './lib/workspace-menu-browser';
 import { registerProjectBadge } from './lib/workspace-switch-browser';
+import { registerFocusMode } from './lib/focus-background';
 import { SURFACE_MODE_KEY, applySurfaceMode, resolveSurfaceMode } from './lib/surface-mode';
 import {
   changelogUrl,
@@ -201,6 +202,7 @@ void migrateSessionsToWorkspaces().catch((e) => console.error('Session migration
 // Right-click "add to workspace" + keyboard shortcut (also owns the side-panel menu item).
 registerWorkspaceMenu();
 registerProjectBadge();
+registerFocusMode();
 // Test hook so e2e can drive the menu handlers (native menus can't be clicked headless).
 // Constant-folded away in normal builds.
 if (import.meta.env.MODE === 'e2e') {
