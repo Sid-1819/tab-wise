@@ -1,30 +1,18 @@
-import { Moon, Sun, Palette } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { THEME_PRESETS, useThemePreset } from '@/components/theme-provider';
-import { applyPresetWithTransition, applyThemeWithTransition, originFromElement } from '@/lib/theme-transition';
+import { applyThemeWithTransition, originFromElement } from '@/lib/theme-transition';
 import { cn } from '@/lib/utils';
 import { useIsClient } from '@/hooks/use-is-client';
 
 export function ThemeSwitcher() {
   const { setTheme, resolvedTheme } = useTheme();
-  const { preset, setPreset } = useThemePreset();
   const mounted = useIsClient();
   const [animating, setAnimating] = React.useState(false);
 
   const isDark = mounted && resolvedTheme === 'dark';
-
-  const paletteRef = React.useRef<HTMLButtonElement>(null);
 
   const toggleTheme = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnimating(true);
@@ -68,38 +56,6 @@ export function ThemeSwitcher() {
         </span>
       </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            ref={paletteRef}
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            aria-label="Theme preset"
-            title="Theme preset"
-          >
-            <Palette className="size-3.5" aria-hidden />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuLabel>Preset</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={preset}
-            onValueChange={(id) => {
-              const origin = paletteRef.current
-                ? originFromElement(paletteRef.current)
-                : undefined;
-              applyPresetWithTransition(() => setPreset(id), origin);
-            }}
-          >
-            {THEME_PRESETS.map((p) => (
-              <DropdownMenuRadioItem key={p.id} value={p.id}>
-                {p.label}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
   );
 }

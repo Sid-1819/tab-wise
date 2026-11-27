@@ -1,5 +1,5 @@
 import type { ChangeEvent, ReactNode } from 'react';
-import { ChevronDown, Plus, Settings } from 'lucide-react';
+import { ChevronDown, FolderPlus, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -63,20 +63,17 @@ function SettingRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <Label htmlFor={id} className="flex min-w-0 flex-col gap-0.5">
+      <Label htmlFor={id} className="flex min-w-0 flex-col gap-0.5 text-xs font-medium leading-tight">
         <span>{title}</span>
-        <span className="text-xs font-normal leading-snug text-muted-foreground">
-          {description}
-        </span>
+        <span className="text-[11px] font-normal leading-snug text-muted-foreground">{description}</span>
       </Label>
-      <Switch
-        id={id}
-        className="shrink-0"
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-      />
+      <Switch id={id} className="shrink-0" checked={checked} onCheckedChange={onCheckedChange} />
     </div>
   );
+}
+
+function SectionTitle({ children }: { children: ReactNode }) {
+  return <h5 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{children}</h5>;
 }
 
 function FieldSelect({
@@ -97,15 +94,15 @@ function FieldSelect({
         value={value}
         onChange={onChange}
         className={cn(
-          'h-10 w-full appearance-none rounded-md border border-input bg-background py-0 pl-3 pr-9 text-sm text-foreground',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          'h-8 w-full appearance-none rounded-md border border-input bg-background py-0 pl-2.5 pr-8 text-xs text-foreground',
+          'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40',
           'disabled:cursor-not-allowed disabled:opacity-50'
         )}
       >
         {children}
       </select>
       <ChevronDown
-        className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
         aria-hidden
       />
     </div>
@@ -133,22 +130,22 @@ export function GroupToolbar({
   return (
     <>
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
-        className="h-7 w-7 shrink-0 p-0"
+        className="h-7 w-7 shrink-0 p-0 text-muted-foreground"
         onClick={onCreateGroup}
         aria-label="Create a new custom group"
-        title="Create a new custom group"
+        title="New group"
       >
-        <Plus className="h-3.5 w-3.5" aria-hidden />
+        <FolderPlus className="h-3.5 w-3.5" aria-hidden />
       </Button>
 
       <Popover>
         <PopoverTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-7 w-7 shrink-0 p-0"
+            className="h-7 w-7 shrink-0 p-0 text-muted-foreground"
             aria-label="Grouping settings"
             title="Grouping settings"
           >
@@ -159,33 +156,26 @@ export function GroupToolbar({
           align="end"
           sideOffset={6}
           collisionPadding={8}
-          className="w-80 max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-1rem))] overflow-y-auto"
+          className="w-72 max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-1rem))] overflow-y-auto p-3"
         >
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <h4 className="font-medium leading-none">Grouping Settings</h4>
-              <p className="text-sm text-muted-foreground">
-                Configure how tabs are automatically grouped
-              </p>
-            </div>
+          <div className="grid gap-3">
+            <h4 className="text-[13px] font-semibold leading-none">Grouping</h4>
 
             <SettingRow
               id="auto-grouping"
-              title="Auto-Grouping"
-              description="Enable automatic tab grouping"
+              title="Auto-group tabs"
+              description="Sort open tabs into groups automatically"
               checked={enableAutoGrouping}
               onCheckedChange={onToggleAutoGrouping}
             />
 
             {enableAutoGrouping && (
-              <div className="grid gap-2">
-                <Label htmlFor="grouping-strategy">Grouping Strategy</Label>
+              <div className="grid gap-1.5">
+                <Label htmlFor="grouping-strategy" className="text-xs font-medium">Group by</Label>
                 <FieldSelect
                   id="grouping-strategy"
                   value={autoGroupStrategy}
-                  onChange={(event) =>
-                    onStrategyChange(event.target.value as AutoGroupStrategy)
-                  }
+                  onChange={(event) => onStrategyChange(event.target.value as AutoGroupStrategy)}
                 >
                   {Object.entries(STRATEGY_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -193,19 +183,15 @@ export function GroupToolbar({
                     </option>
                   ))}
                 </FieldSelect>
-                <p className="text-xs text-muted-foreground">
-                  {STRATEGY_HINTS[autoGroupStrategy]}
-                </p>
+                <p className="text-[11px] leading-snug text-muted-foreground">{STRATEGY_HINTS[autoGroupStrategy]}</p>
 
                 {autoGroupStrategy === 'last-used' && onLastUsedIntervalChange && (
-                  <div className="grid gap-2">
-                    <Label htmlFor="last-used-interval">Time Interval</Label>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="last-used-interval" className="text-xs font-medium">Time interval</Label>
                     <FieldSelect
                       id="last-used-interval"
                       value={lastUsedInterval}
-                      onChange={(event) =>
-                        onLastUsedIntervalChange(Number(event.target.value))
-                      }
+                      onChange={(event) => onLastUsedIntervalChange(Number(event.target.value))}
                     >
                       <option value={1}>1 hour</option>
                       <option value={2}>2 hours</option>
@@ -216,13 +202,15 @@ export function GroupToolbar({
                 )}
 
                 {autoGroupStrategy === 'domain' && onShowNestedGroupsChange && (
-                  <SettingRow
-                    id="nested-groups"
-                    title="Nest by subdomain"
-                    description="Group different hostnames inside the same domain"
-                    checked={showNestedGroups}
-                    onCheckedChange={onShowNestedGroupsChange}
-                  />
+                  <div className="mt-1">
+                    <SettingRow
+                      id="nested-groups"
+                      title="Nest subdomains"
+                      description="Group subdomains inside their main domain"
+                      checked={showNestedGroups}
+                      onCheckedChange={onShowNestedGroupsChange}
+                    />
+                  </div>
                 )}
               </div>
             )}
@@ -230,43 +218,44 @@ export function GroupToolbar({
             {chromeGroupsAvailable && onShowChromeGroupsChange && (
               <SettingRow
                 id="chrome-groups"
-                title="Chrome groups"
-                description="Show groups created in Chrome"
+                title="Show Chrome groups"
+                description="Include groups made in Chrome itself"
                 checked={showChromeGroups}
                 onCheckedChange={onShowChromeGroupsChange}
               />
             )}
 
-            <SettingRow
-              id="auto-delete"
-              title="Auto-Delete Grouping"
-              description="Show group of tabs to delete"
-              checked={enableAutoDelete}
-              onCheckedChange={(enabled) => onToggleAutoDelete?.(enabled)}
-            />
+            <div className="grid gap-3 border-t border-border/60 pt-3">
+              <SectionTitle>Cleanup</SectionTitle>
+              <SettingRow
+                id="auto-delete"
+                title="Surface stale tabs"
+                description="Collect tabs you haven't visited in a while"
+                checked={enableAutoDelete}
+                onCheckedChange={(enabled) => onToggleAutoDelete?.(enabled)}
+              />
 
-            {enableAutoDelete && onAutoDeleteThresholdChange && (
-              <div className="grid gap-2">
-                <Label htmlFor="delete-threshold">Delete Threshold</Label>
-                <FieldSelect
-                  id="delete-threshold"
-                  value={autoDeleteThreshold / (60 * 60 * 1000)}
-                  onChange={(event) =>
-                    onAutoDeleteThresholdChange(Number(event.target.value) * 60 * 60 * 1000)
-                  }
-                >
-                  <option value={4}>4 hours</option>
-                  <option value={8}>8 hours</option>
-                  <option value={12}>12 hours</option>
-                  <option value={24}>24 hours</option>
-                  <option value={48}>48 hours</option>
-                  <option value={168}>1 week</option>
-                </FieldSelect>
-                <p className="text-xs text-muted-foreground">
-                  Tabs not visited within this time will appear in the delete group
-                </p>
-              </div>
-            )}
+              {enableAutoDelete && onAutoDeleteThresholdChange && (
+                <div className="grid gap-1.5">
+                  <Label htmlFor="delete-threshold" className="text-xs font-medium">Stale after</Label>
+                  <FieldSelect
+                    id="delete-threshold"
+                    value={autoDeleteThreshold / (60 * 60 * 1000)}
+                    onChange={(event) => onAutoDeleteThresholdChange(Number(event.target.value) * 60 * 60 * 1000)}
+                  >
+                    <option value={4}>4 hours</option>
+                    <option value={8}>8 hours</option>
+                    <option value={12}>12 hours</option>
+                    <option value={24}>24 hours</option>
+                    <option value={48}>48 hours</option>
+                    <option value={168}>1 week</option>
+                  </FieldSelect>
+                  <p className="text-[11px] leading-snug text-muted-foreground">
+                    Tabs not visited within this time appear in a stale group.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </PopoverContent>
       </Popover>

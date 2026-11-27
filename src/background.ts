@@ -9,6 +9,17 @@ import {
   getActivityData,
 } from './lib/activity-storage';
 import type { ActivityData } from './lib/activity-types';
+import { handleExternalRequest, isAllowedOrigin } from './lib/external-api';
+import { registerAutoCapture } from './lib/auto-capture';
+import { migrateSessionsToWorkspaces } from './lib/session-migration-browser';
+import {
+  handleAddCommand,
+  handleMenuClick,
+  registerWorkspaceMenu,
+} from './lib/workspace-menu-browser';
+import { registerProjectBadge } from './lib/workspace-switch-browser';
+import { registerFocusMode } from './lib/focus-background';
+import { SURFACE_MODE_KEY, applySurfaceMode, resolveSurfaceMode } from './lib/surface-mode';
 import {
   changelogUrl,
   isMajorBump,
@@ -38,11 +49,6 @@ chrome.runtime.onInstalled.addListener((details) => {
   console.log('Tab Wise extension installed');
   refreshTabs();
   cleanupOldActivity();
-  chrome.contextMenus.create({
-    id: 'openTabWiseSidePanel',
-    title: 'Open Tab Wise in Side Panel',
-    contexts: ['page', 'action'],
-  });
   void openReleaseLanding(details);
 });
 
@@ -189,6 +195,32 @@ chrome.runtime.onMessage.addListener((message: BackgroundMessage, sender, sendRe
   return true; // Keep channel open for async response
 });
 
+// Remember where each window was left so workspaces can offer "resume".
+registerAutoCapture();
+// 3.0: saved sessions became (archived) workspaces. One-time and idempotent.
+void migrateSessionsToWorkspaces().catch((e) => console.error('Session migration failed:', e));
+// Right-click "add to workspace" + keyboard shortcut (also owns the side-panel menu item).
+registerWorkspaceMenu();
+registerProjectBadge();
+registerFocusMode();
+// Test hook so e2e can drive the menu handlers (native menus can't be clicked headless).
+// Constant-folded away in normal builds.
+if (import.meta.env.MODE === 'e2e') {
+  Object.assign(globalThis, { __tw: { handleMenuClick, handleAddCommand } });
+}
+
+// Messages from the TabWise website (see manifest `externally_connectable`).
+// Origin is re-checked here as defense in depth.
+chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+  const origin = sender.origin ?? (sender.url ? new URL(sender.url).origin : undefined);
+  if (!isAllowedOrigin(origin)) {
+    sendResponse({ ok: false, error: 'bad_request' });
+    return false;
+  }
+  void handleExternalRequest(message).then(sendResponse);
+  return true; // async response
+});
+
 async function handleMessage(message: BackgroundMessage): Promise<unknown> {
   switch (message.action) {
     case 'getTabs': {
@@ -246,9 +278,15 @@ async function initializeActiveTab() {
 
 initializeActiveTab();
 
-// Set up side panel behavior - open on action click (extension icon)
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {
-  // Side panel API might not be available in older Chrome versions
+// What the toolbar icon opens (side panel by default, or a popup) follows the user's
+// preference. Re-applied on every worker start because action state isn't persisted.
+void applySurfaceMode();
+chrome.runtime.onStartup.addListener(() => void applySurfaceMode());
+chrome.runtime.onInstalled.addListener(() => void applySurfaceMode());
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes[SURFACE_MODE_KEY]) {
+    void applySurfaceMode(resolveSurfaceMode(changes[SURFACE_MODE_KEY].newValue));
+  }
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {

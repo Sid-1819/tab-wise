@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -62,23 +62,21 @@ export function RecentlyClosed({ onRestored }: { onRestored?: () => void }) {
     }
   };
 
-  const undoLast = () => {
-    restore();
-  };
-
   return (
     <>
-      <Button variant="outline" size="sm" className="h-7 shrink-0 px-2 text-xs" onClick={undoLast}>
-        <RotateCcw className="mr-1 h-3.5 w-3.5" />
-        Undo
-      </Button>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 shrink-0 px-2 text-xs text-muted-foreground">
-            Recent ({tabSessions.length})
+          <Button
+            variant="ghost"
+            size="sm"
+            className="relative h-7 w-7 shrink-0 p-0 text-muted-foreground"
+            aria-label={`Recently closed tabs (${tabSessions.length})`}
+            title={`Recently closed (${tabSessions.length})`}
+          >
+            <History className="h-3.5 w-3.5" aria-hidden />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80 p-0" align="start">
+        <PopoverContent className="w-80 p-0" align="end">
           <div className="p-2 border-b text-sm font-medium">Recently closed tabs</div>
           <div className="max-h-64 overflow-y-auto p-1">
             {tabSessions.length === 0 ? (

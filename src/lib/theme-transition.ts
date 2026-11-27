@@ -79,10 +79,6 @@ export function applyThemeWithTransition(
   withCircleReveal(() => setTheme(theme), origin);
 }
 
-export function applyPresetWithTransition(run: () => void, origin?: TransitionOrigin) {
-  withCircleReveal(run, origin);
-}
-
 export function originFromElement(el: HTMLElement): TransitionOrigin {
   const rect = el.getBoundingClientRect();
   return {

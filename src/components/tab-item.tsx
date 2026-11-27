@@ -111,11 +111,12 @@ export function TabItem({
       className={cn(
         'group grid min-w-0 cursor-pointer items-center gap-1 rounded-md transition-colors',
         'grid-cols-[16px_minmax(0,1fr)_16px_auto]',
-        nestedInGroup ? 'py-1 pl-2 pr-0.5' : 'py-1 px-2',
-        'hover:bg-accent',
+        'min-h-7',
+        nestedInGroup ? 'py-1 pl-2 pr-1.5' : 'py-1 px-2',
+        'hover:bg-foreground/5',
         'outline-none',
         tab.discarded && 'opacity-60',
-        isActive && 'bg-accent',
+        isActive && 'bg-foreground/10 hover:bg-foreground/10',
         selected && 'ring-1 ring-inset ring-ring'
       )}
       aria-current={isActive ? 'true' : undefined}
@@ -141,6 +142,12 @@ export function TabItem({
         {tab.discarded && (
           <span className="shrink-0 text-[10px] text-muted-foreground">Sleeping</span>
         )}
+        {tab.isImportant && (
+          <Shield
+            className="h-3 w-3 shrink-0 fill-amber-500/70 text-amber-500/70"
+            aria-label="Important"
+          />
+        )}
       </div>
 
       <div
@@ -157,10 +164,6 @@ export function TabItem({
         className="relative z-10 flex shrink-0 items-center gap-0"
         onClick={(e) => e.stopPropagation()}
       >
-        {tab.isImportant && (
-          <Shield className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500" aria-hidden />
-        )}
-
         {hasManageMenu && (
           <Popover open={menuOpen} onOpenChange={setMenuOpen}>
             <PopoverTrigger asChild>
