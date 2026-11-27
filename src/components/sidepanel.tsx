@@ -1148,6 +1148,7 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
       onSelect: () => void handleWindowScopeChange('all'),
     },
     { id: 'create-group', label: 'Create group', onSelect: handleCreateGroup },
+    { id: 'focus', label: focusSession ? 'End focus mode' : 'Start focus mode', onSelect: toggleFocus },
     { id: 'reopen-closed', label: 'Reopen closed tab', onSelect: () => void reopenClosed(1) },
     {
       id: 'activity',
@@ -1223,6 +1224,14 @@ export function SidePanel({ surface = 'sidepanel' }: { surface?: 'sidepanel' | '
         ))}
       </div>
       )}
+
+      <FocusCard
+        session={focusSession}
+        setupOpen={focusSetupOpen}
+        onSetupClose={() => setFocusSetupOpen(false)}
+        windowId={currentWindowId}
+        tabCount={tabs.filter((t) => t.windowId === currentWindowId).length}
+      />
 
       {workspacesOn && (
       <ResumeAndSuggest

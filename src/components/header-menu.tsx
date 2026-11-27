@@ -24,10 +24,12 @@ interface HeaderMenuProps {
   onFeedback: () => void;
   workspacesOn: boolean;
   onToggleWorkspaces: (on: boolean) => void;
+  focusActive: boolean;
+  onFocus: () => void;
 }
 
 /** Everything that is not needed every minute lives behind one "more" button. */
-export function HeaderMenu({ surface, showActivity, onToggleActivity, activityAvailable, onFeedback, workspacesOn, onToggleWorkspaces }: HeaderMenuProps) {
+export function HeaderMenu({ surface, showActivity, onToggleActivity, activityAvailable, onFeedback, workspacesOn, onToggleWorkspaces, focusActive, onFocus }: HeaderMenuProps) {
   const { mode, choose, openSidePanel } = useSurfaceChoice(surface);
 
   return (

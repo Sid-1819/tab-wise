@@ -55,6 +55,16 @@ export async function refreshProjectBadge(): Promise<void> {
     if (tab?.id == null) return;
     const win = await chrome.windows.get(tab.windowId, { populate: true });
     if (win.incognito || win.type !== 'normal') return;
+    // An active focus session owns the badge in its window.
+    const focus = await getFocusSession();
+    if (focus && focus.windowId === win.id) {
+      await applyFocusBadgeToTab(tab.id, focus);
+      return;
+    }
+    if (!(await isWorkspacesEnabled())) {
+      await chrome.action.setBadgeText({ text: '', tabId: tab.id });
+      return;
+    }
     const workspaces = await getWorkspaces();
     const id = matchedWorkspaceId(
       (win.tabs ?? []).map((t) => t.url || t.pendingUrl || ''),
