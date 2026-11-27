@@ -5,6 +5,7 @@ import { restoreWorkspaceResources } from '@/lib/workspace-browser';
 import { markOpened } from '@/lib/workspace-model';
 import { getWorkspaces, updateWorkspace } from '@/lib/workspace-storage';
 import type { Workspace } from '@/types/workspace';
+import { applyFocusBadgeToTab, getFocusSession } from '@/lib/focus-session';
 
 /** Windows a workspace could live in: normal, non-incognito. */
 async function candidateWindows(): Promise<WindowLite[]> {
@@ -54,10 +55,6 @@ export async function refreshProjectBadge(): Promise<void> {
     if (tab?.id == null) return;
     const win = await chrome.windows.get(tab.windowId, { populate: true });
     if (win.incognito || win.type !== 'normal') return;
-    if (!(await isWorkspacesEnabled())) {
-      await chrome.action.setBadgeText({ text: '', tabId: tab.id });
-      return;
-    }
     const workspaces = await getWorkspaces();
     const id = matchedWorkspaceId(
       (win.tabs ?? []).map((t) => t.url || t.pendingUrl || ''),

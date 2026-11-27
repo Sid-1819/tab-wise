@@ -38,6 +38,8 @@ export function HeaderMenu({ surface, showActivity, onToggleActivity, activityAv
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem onSelect={onFocus}>{focusActive ? 'End focus mode' : 'Start focus mode…'}</DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuCheckboxItem checked={showActivity} disabled={!activityAvailable} onCheckedChange={onToggleActivity}>
           Activity stats
         </DropdownMenuCheckboxItem>
